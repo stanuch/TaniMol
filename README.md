@@ -63,16 +63,7 @@ Where *a* and *b* are the number of "on" bits in each fingerprint, and *c* is th
 
 # How the pipeline works
 
-```mermaid
-flowchart LR
-    A["ChEMBL\nData"] --> B["Preprocessing"]
-    B --> C["Fingerprints"]
-    C --> D["Tanimoto\nSimilarity"]
-    D --> E["Clustering"]
-    D --> F["Activity\nAnalysis"]
-    E --> G["Visualization"]
-    F --> G
-```
+![](docs/img/pipeline.png)
 
 ### 1. Data acquisition
 
