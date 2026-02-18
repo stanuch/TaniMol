@@ -4,6 +4,17 @@
 
 TaniMol is a chemoinformatics project that analyzes the relationship between structural similarity and biological activity of DNA repair protein inhibitors. It takes bioactivity data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes each molecule as a fingerprint, computes pairwise Tanimoto similarity, groups the compounds into clusters, and then examines how the activity (IC50) is distributed within and between those clusters.
 
+![Stage](https://img.shields.io/badge/Stage-Architecture_Design-blueviolet)
+![Research](https://img.shields.io/badge/Research-Theoretical-orange)
+![No Code Yet](https://img.shields.io/badge/Code-None_Yet-lightgrey)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+> [!NOTE]
+> **PRE-DEVELOPMENT — ARCHITECTURE & RESEARCH PHASE**
+>
+> This project currently exists as a collection of design documents and theoretical research.
+> There is no functional code at this stage. The repository is used to track architectural decisions, explore concepts, and lay the groundwork before implementation begins.
+
 
 # Table of contents
 
