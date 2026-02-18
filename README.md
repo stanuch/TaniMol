@@ -2,53 +2,230 @@
   <img src="docs/img/tanimol_logo.png" width="600" title="TaniMol Logo" alt="TaniMol Logo">
 </p>
 
+TaniMol is a chemoinformatics project that analyzes the relationship between structural similarity and biological activity of DNA repair protein inhibitors. It takes bioactivity data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes each molecule as a fingerprint, computes pairwise Tanimoto similarity, groups the compounds into clusters, and then examines how the activity (IC50) is distributed within and between those clusters.
 
-**TaniMol** will be an open-source Python tool designed for chemical space exploration and molecular clustering based on Tanimoto similarity metrics. Built upon the RDKit framework, it will automate the generation of fingerprints and similarity matrices to identify structural relationships within large chemical libraries.
 
-It will aim to provide a reproducible and efficient pipeline for selecting representative compounds, facilitating high-throughput analysis in early-stage drug discovery.
+# Table of contents
 
-## Theoretical Workflow
+* [Background](#background)
+    * [DNA repair proteins as drug targets](#dna-repair-proteins-as-drug-targets)
+    * [What is structure-activity analysis](#what-is-structure-activity-analysis)
+    * [Why Tanimoto similarity](#why-tanimoto-similarity)
+* [How the pipeline works](#how-the-pipeline-works)
+    * [Data acquisition](#1-data-acquisition)
+    * [Preprocessing](#2-preprocessing)
+    * [Fingerprint generation](#3-fingerprint-generation)
+    * [Similarity matrix](#4-similarity-matrix)
+    * [Clustering](#5-clustering)
+    * [Activity analysis](#6-activity-analysis)
+    * [Visualization](#7-visualization)
+* [Project structure](#project-structure)
+* [Installation](#installation)
+* [Usage](#usage)
+* [License](#license)
 
-1.  **Data Ingestion & Sanitization**
-    The system will accept chemical structures (SMILES, SDF) and strictly validate them. It will handle salt stripping, tautomer standardization, and duplicate removal to ensure data integrity before any calculation begins.
 
-2.  **Fingerprint Generation**
-    TaniMol will map chemical structures into high-dimensional bit vectors (Morgan Fingerprints/ECFP4). This transforms chemical intuition into a mathematical format suitable for vector operations.
 
-3.  **Similarity Matrix Calculation**
-    Using the **Tanimoto Coefficient** (Jaccard Index), the tool will compute an *N x N* similarity matrix. This step allows the quantification of "likeness" between any two molecules in the set.
+# Background
 
-4.  **Unsupervised Clustering**
-    Based on the distance matrix ($1 - Tanimoto$), molecules will be grouped into clusters. The primary algorithm will be **Butina clustering**, optimized for chemical datasets, with optional support for K-Means and Hierarchical clustering.
+### DNA repair proteins as drug targets
 
-5.  **Visualization & Reporting**
-    Finally, the high-dimensional data will be projected into 2D space using dimensionality reduction techniques (t-SNE or UMAP), allowing users to visually inspect "islands" of chemical activity.
+Cells have specialized proteins that fix DNA damage. Tumors often depend on specific repair pathways to survive, which makes those proteins useful drug targets. The most well-known example is PARP1 - its inhibitors (olaparib, niraparib, etc.) are already approved drugs. Other targets from the same area include PARP2, ATR, ATM, and DNA-PKcs. Each of these has dozens to hundreds of known inhibitors with measured activity stored in public databases like ChEMBL.
 
-## Methodological Approach
+This project takes those inhibitor collections and analyzes them from a structural perspective.
 
-This project implements a standard chemoinformatics pipeline focused on unsupervised learning. The methodology is built upon three core pillars chosen for their proven effectiveness in drug discovery campaigns:
 
-### 1. Molecular Representation: Morgan Fingerprints (ECFP)
-Chemical structures are vectorized using **Morgan Fingerprints** (equivalent to Extended-Connectivity Fingerprints, ECFP4/ECFP6) with a radius of 2 or 3 and a bit-length of 1024 or 2048.
+### What is structure-activity analysis
 
-### 2. Similarity Metric: Tanimoto Coefficient
-To quantify the relationship between binary fingerprint vectors, the **Tanimoto Coefficient** ($T_c$) is utilized:
+The basic idea is simple: take a set of molecules that have been tested against the same protein, and check whether the ones that look alike (structurally) also behave alike (in terms of potency).
+
+In practice, the relationship between structure and activity is not always straightforward. Sometimes two molecules differ by a single atom yet show completely different potencies. These cases are called **activity cliffs** and they are the most interesting part of the analysis, because they point to structural features that strongly influence biological activity.
+
+The opposite is also informative: when a whole cluster of structurally similar molecules has consistently high (or low) activity, that cluster likely represents a coherent chemical series worth further investigation.
+
+
+### Why Tanimoto similarity
+
+There are many ways to compare molecules. TaniMol uses the **Tanimoto coefficient** applied to binary fingerprints, because it's the standard approach in chemoinformatics for this type of analysis. It has clear advantages:
+
+- It's well-understood and widely used in the field
+- It works with any binary fingerprint type (Morgan, MACCS, etc.)
+- It produces values between 0 and 1, which are easy to interpret
+- It handles the "asymmetry problem" - if molecule A has 10 features and B has 100, their similarity is low even if all of A's features are present in B
+
+The formula itself is straightforward:
 
 $$T(A, B) = \frac{c}{a + b - c}$$
 
-Where $c$ is the count of common set bits, and $a$ and $b$ are the set bits in molecule $A$ and $B$, respectively.
+Where *a* and *b* are the number of "on" bits in each fingerprint, and *c* is the number of bits that are "on" in both. When two molecules have identical fingerprints, T = 1. When they share nothing, T = 0.
 
-### 3. Clustering Strategy: Butina Algorithm
-For grouping compounds, the project prioritizes the **Butina clustering algorithm** (sphere exclusion) over general-purpose methods like K-Means.
 
-## Planned Features
 
-* **Robust I/O:** Support for .csv, .smi, and .sdf files with error logging for malformed structures.
-* **Configurable Fingerprints:** Support for Morgan (ECFP), MACCS Keys, and Topological Torsion fingerprints.
-* **Efficient Matrix Operations:** Utilizing NumPy and RDKit's bulk similarity functions to handle datasets of 10k+ molecules efficiently.
-* **Interactive Visualization:** Integration with Plotly to generate interactive scatter plots of the chemical space.
-* **Scaffold Analysis:** Automatic extraction of Murcko Scaffolds for each generated cluster to identify the core substructures.
+# How the pipeline works
 
-## License
+```mermaid
+flowchart LR
+    A["ChEMBL\nData"] --> B["Preprocessing"]
+    B --> C["Fingerprints"]
+    C --> D["Tanimoto\nSimilarity"]
+    D --> E["Clustering"]
+    D --> F["Activity\nAnalysis"]
+    E --> G["Visualization"]
+    F --> G
+```
+
+### 1. Data acquisition
+
+Bioactivity data is fetched from ChEMBL using the `chembl_webresource_client` Python library. For each target protein, the script pulls:
+- Canonical SMILES (the text encoding of each molecule's structure)
+- IC50 or Ki values (how potent the molecule is)
+- Assay metadata (to filter for reliable, single-protein assays)
+
+The data is filtered to keep only measurements with a confidence score ≥ 7 and standard units (nM). Each target is saved as a separate CSV, and all targets are merged into one combined dataset.
+
+A pre-downloaded fallback CSV is included in `data/raw/` so the project can run without internet access.
+
+
+### 2. Preprocessing
+
+Raw ChEMBL data needs cleaning before analysis:
+
+- **SMILES validation** - invalid or unparseable structures are removed (using RDKit)
+- **Salt stripping** - counter-ions and solvents are removed, keeping only the active molecule
+- **Tautomer standardization** - different representations of the same molecule are unified
+- **Duplicate handling** - when the same molecule appears multiple times for the same target, the entry with the lowest (best) IC50 is kept
+- **pIC50 conversion** - IC50 values in nM are converted to pIC50 = −log₁₀(IC50 × 10⁻⁹), so that higher values = higher potency and the scale is more uniform
+
+After this step, each row in the dataset is one unique molecule with a clean SMILES string, a target label, and a pIC50 value.
+
+
+### 3. Fingerprint generation
+
+Each molecule is converted into a binary fingerprint - a fixed-length vector of 0s and 1s where each bit represents the presence or absence of a particular substructural feature.
+
+The primary fingerprint type is **Morgan (ECFP4)** with radius 2 and 2048 bits. This captures circular neighborhoods around each atom up to 2 bonds away. It's the same fingerprint type used in most virtual screening and similarity-based analyses in drug discovery.
+
+The code also supports MACCS Keys (166 predefined structural patterns) and RDKit topological fingerprints as alternatives, since different fingerprint types can give different similarity rankings. Comparing results across fingerprint types is part of the analysis.
+
+
+### 4. Similarity matrix
+
+Once all molecules have fingerprints, a pairwise Tanimoto similarity matrix is computed. For a dataset of N molecules, this is an N×N symmetric matrix where entry (i, j) is the Tanimoto coefficient between molecules i and j. The diagonal is always 1.0 (a molecule is identical to itself).
+
+For efficiency, the computation uses RDKit's `BulkTanimotoSimilarity`, which is implemented in C++ and much faster than computing each pair individually in Python.
+
+The **distance matrix** (1 − Tanimoto) is also computed, since most clustering algorithms work with distances rather than similarities.
+
+
+### 5. Clustering
+
+Molecules are grouped into clusters based on structural similarity. The primary method is **Butina clustering** (also called sphere-exclusion clustering):
+
+1. For each molecule, count how many neighbors it has within a distance threshold (e.g. Tanimoto distance < 0.4)
+2. The molecule with the most neighbors becomes the centroid of the first cluster, and its neighbors join that cluster
+3. Repeat with the remaining molecules
+4. Molecules with no neighbors become singletons
+
+A key advantage of Butina over methods like K-Means is that you don't need to specify the number of clusters in advance. The threshold parameter controls cluster granularity instead.
+
+**Hierarchical clustering** (using scipy's linkage) is applied as a second method for comparison. It produces a dendrogram showing the relationships between all molecules, which is useful for visual inspection even when Butina is the primary method.
+
+
+### 6. Activity analysis
+
+This is the core analytical step - checking whether structural clusters correspond to activity groups. Several analyses are performed:
+
+**Within-cluster activity distributions**: For each cluster, compute the mean, median, standard deviation, and range of pIC50 values. Clusters where all members have similar activity support the "similar structure → similar activity" hypothesis. Clusters with high variance suggest the relationship breaks down.
+
+**Activity cliff detection**: Find pairs of molecules where Tanimoto similarity is high (e.g. > 0.8) but the difference in pIC50 is large (e.g. > 2 units, which means a 100-fold difference in potency). These pairs are activity cliffs.
+
+**SALI (Structure-Activity Landscape Index)**: For each pair of molecules, SALI = |ΔpIC50| / (1 − Tanimoto). This amplifies cases where very similar molecules have very different activities. High SALI values point to the most dramatic activity cliffs.
+
+**Similarity-activity correlation**: Overall statistical test (Spearman correlation) between pairwise Tanimoto similarity and pairwise |ΔpIC50|. A strong negative correlation would mean similar molecules do tend to have similar activity.
+
+
+### 7. Visualization
+
+The results are presented through several types of plots:
+
+- **Chemical space map** - t-SNE or UMAP projection of fingerprints into 2D, with points colored by target or by pIC50
+- **Similarity heatmap** - the full Tanimoto matrix displayed as a heatmap, optionally with hierarchical clustering dendrogram
+- **Cluster activity boxplots** - distribution of pIC50 within each cluster, making it easy to spot active vs. inactive clusters
+- **Activity cliff scatter** - Tanimoto similarity vs. |ΔpIC50| for all molecule pairs, highlighting activity cliffs
+- **SALI network** - graph where nodes are molecules and edges connect pairs with high SALI scores
+
+
+
+# Project structure
+
+```
+TaniMol/
+├── data/
+│   ├── raw/                 # Original ChEMBL exports (per-target CSVs)
+│   ├── processed/           # Cleaned, merged dataset with pIC50
+│   ├── external/            # Any third-party data
+│   └── references/          # Notes on selected targets
+│
+├── src/                     # Python modules (importable from notebooks)
+│   ├── preprocessing.py     # Clean SMILES, compute pIC50, deduplicate
+│   ├── fingerprints.py      # Generate Morgan/MACCS/RDKit fingerprints
+│   ├── similarity.py        # Compute Tanimoto similarity and distance matrices
+│   ├── clustering.py        # Butina and hierarchical clustering
+│   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics
+│   └── visualization.py     # All plotting functions
+│
+├── scripts/
+│   └── fetch_data.py        # One-off script to download data from ChEMBL
+│
+├── notebooks/
+│   └── 01_analysis.ipynb    # Full analysis notebook with explanations and plots
+│
+├── results/                 # Generated plots, tables, exported figures
+├── tests/                   # Unit tests for core modules
+├── docs/img/                # Logo and README figures
+├── requirements.txt         # Python dependencies
+└── LICENSE                  # MIT
+```
+
+The `src/` modules are designed to be imported from the notebook:
+```python
+from src.preprocessing import load_and_clean
+from src.fingerprints import generate_fingerprints
+from src.similarity import tanimoto_matrix
+```
+
+Each module handles one step of the pipeline. Analysis parameters (fingerprint radius, clustering threshold, etc.) are defined at the top of the notebook so they're visible and easy to adjust.
+
+
+# Installation
+
+```bash
+git clone https://github.com/stanuch/TaniMol.git
+cd TaniMol
+pip install -r requirements.txt
+```
+
+RDKit is the only dependency that can be tricky to install. If `pip install rdkit` doesn't work, the recommended approach is through conda:
+```bash
+conda install -c conda-forge rdkit
+```
+
+
+# Usage
+
+The intended workflow is through the Jupyter notebook:
+```bash
+jupyter notebook notebooks/01_analysis.ipynb
+```
+
+The notebook runs the full pipeline step by step with explanations and generates all plots inline. All heavy computation is handled by the `src/` modules, so the notebook itself stays clean and focused on the analysis narrative.
+
+To fetch fresh data from ChEMBL (requires internet):
+```bash
+python scripts/fetch_data.py
+```
+
+
+# License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
