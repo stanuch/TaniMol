@@ -222,6 +222,11 @@ To fetch fresh data from ChEMBL (requires internet):
 python scripts/fetch_data.py
 ```
 
+> **Note:** Before running, verify the ChEMBL version in `fetch_data.py` is up to date:
+> ```python
+> CHEMBL_VERSION = "36"  # change this to the desired version
+> ```
+> The latest version can be found at [ChEMBL Downloads](https://chembl.gitbook.io/chembl-interface-documentation/downloads).
 
 # License
 
