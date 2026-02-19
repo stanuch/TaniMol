@@ -78,14 +78,9 @@ Where *a* and *b* are the number of "on" bits in each fingerprint, and *c* is th
 
 ### 1. Data acquisition
 
-Bioactivity data is fetched from ChEMBL using the `chembl_webresource_client` Python library. For each target protein, the script pulls:
-- Canonical SMILES (the text encoding of each molecule's structure)
-- IC50 or Ki values (how potent the molecule is)
-- Assay metadata (to filter for reliable, single-protein assays)
+Bioactivity data comes from [ChEMBL](https://www.ebi.ac.uk/chembl/), a public database of bioactive molecules maintained by the European Bioinformatics Institute. The ChEMBL API only allows paginated access to individual records, so instead of querying it record by record, the project downloads the full ChEMBL SQLite database dump from the [EBI FTP server](https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/).
 
-The data is filtered to keep only measurements with a confidence score ≥ 7 and standard units (nM). Each target is saved as a separate CSV, and all targets are merged into one combined dataset.
-
-A pre-downloaded fallback CSV is included in `data/raw/` so the project can run without internet access.
+The `scripts/fetch_data.py` script handles this automatically — it downloads the archive, extracts the `.db` file into `data/raw/`, and cleans up temporary files. Once the database is local, all subsequent filtering and querying is done offline using SQL, which is both faster and more reliable than API calls.
 
 
 ### 2. Preprocessing
