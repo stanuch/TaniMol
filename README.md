@@ -158,7 +158,7 @@ The results are presented through several types of plots:
 ```
 TaniMol/
 ├── data/
-│   ├── raw/                 # Original ChEMBL exports (per-target CSVs)
+│   ├── raw/                 # Original ChEMBL database
 │   ├── processed/           # Cleaned, merged dataset with pIC50
 │   ├── external/            # Any third-party data
 │   └── references/          # Notes on selected targets
@@ -227,6 +227,9 @@ python scripts/fetch_data.py
 > CHEMBL_VERSION = "36"  # change this to the desired version
 > ```
 > The latest version can be found at [ChEMBL Downloads](https://chembl.gitbook.io/chembl-interface-documentation/downloads).
+> Alternatively, you can manually download the `chembl_XX_sqlite.tar.gz` file from the link above and place it in the `scripts/` folder. The script will extract and move the database file automatically. **Do not rename the downloaded file** — the script relies on ChEMBL's default naming convention (`chembl_XX_sqlite.tar.gz`) and will not recognize renamed files.
+>
+> **Requires:** SQLite3
 
 # License
 
