@@ -183,18 +183,17 @@ TaniMol/
 │   ├── raw/                 # Original ChEMBL database
 │   ├── processed/           # Cleaned, merged dataset with pIC50
 │   ├── external/            # Any third-party data
-│   └── references/          # Notes on selected targets
+│   └── targets/             # Notes on selected DNA repair targets
 │
 ├── src/                     # Python modules (importable from notebooks)
+│   ├── config.py            # Shared configuration (targets, ChEMBL version, filters)
+│   ├── fetch_data.py        # Download ChEMBL database from EBI FTP
 │   ├── preprocessing.py     # Clean SMILES, compute pIC50, deduplicate
 │   ├── fingerprints.py      # Generate Morgan/MACCS/RDKit fingerprints
 │   ├── similarity.py        # Compute Tanimoto similarity and distance matrices
 │   ├── clustering.py        # Butina and hierarchical clustering
 │   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics
 │   └── visualization.py     # All plotting functions
-│
-├── scripts/
-│   └── fetch_data.py        # One-off script to download data from ChEMBL
 │
 ├── notebooks/
 │   └── 01_analysis.ipynb    # Full analysis notebook with explanations and plots
@@ -241,15 +240,15 @@ The notebook runs the full pipeline step by step with explanations and generates
 
 To fetch fresh data from ChEMBL (requires internet):
 ```bash
-python scripts/fetch_data.py
+python src/fetch_data.py
 ```
 
-> **Note:** Before running, verify the ChEMBL version in `fetch_data.py` is up to date:
+> **Note:** Before running, verify the ChEMBL version in `config.py` is up to date:
 > ```python
 > CHEMBL_VERSION = "36"  # change this to the desired version
 > ```
 > The latest version can be found at [ChEMBL Downloads](https://chembl.gitbook.io/chembl-interface-documentation/downloads).
-> Alternatively, you can manually download the `chembl_XX_sqlite.tar.gz` file from the link above and place it in the `scripts/` folder. The script will extract and move the database file automatically. **Do not rename the downloaded file** — the script relies on ChEMBL's default naming convention (`chembl_XX_sqlite.tar.gz`) and will not recognize renamed files.
+> Alternatively, you can manually download the `chembl_XX_sqlite.tar.gz` file from the link above and place it in the `src/` folder. The script will extract and move the database file automatically. **Do not rename the downloaded file** — the script relies on ChEMBL's default naming convention (`chembl_XX_sqlite.tar.gz`) and will not recognize renamed files.
 >
 > **Requires:** SQLite3
 

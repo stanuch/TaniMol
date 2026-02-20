@@ -5,27 +5,40 @@ import glob
 import urllib.request
 import tarfile
 
+# Configuration (version, targets, filters) is in config.py
+# To change the ChEMBL database version, edit CHEMBL_VERSION in config.py
+
+from config import CHEMBL_VERSION
+
 # Paths
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 RAW_DIR = os.path.join(PROJECT_ROOT, "data", "raw")
 
-# Configuration
-
-CHEMBL_VERSION = "36"
 URL = f"https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_{CHEMBL_VERSION}_sqlite.tar.gz"
-
 ARCHIVE_PATH = os.path.join(SCRIPT_DIR, f"chembl_{CHEMBL_VERSION}_sqlite.tar.gz")
 DB_PATH = os.path.join(RAW_DIR, f"chembl_{CHEMBL_VERSION}.db")
+
+# Main
 
 if os.path.exists(DB_PATH):
     print(f"Database already exists at {DB_PATH}, skipping downloading process.")
 else:
     if os.path.exists(ARCHIVE_PATH):
-        print("Archive already downloaded, skipping.")
+        print("Archive already downloaded, skipping download.")
     else:
-        print(f"Downloading ChEMBL Database, Version: {CHEMBL_VERSION}...")
+        print(f"ChEMBL {CHEMBL_VERSION} database not found at {DB_PATH}")
+
+        while True:
+            answer = input("Do you want to start downloading? [Y/n]: ").strip().lower()
+            if answer in ("y", "n"):
+                break
+            print("Please enter 'y' or 'n'.")
+        if answer == "n":
+            print("Download cancelled.")
+            sys.exit(0)
+        print(f"\nDownloading ChEMBL Database, Version: {CHEMBL_VERSION}...")
 
         def progress(block_num, block_size, total_size):
             downloaded = block_num * block_size
