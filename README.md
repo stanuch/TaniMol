@@ -30,6 +30,9 @@ TaniMol is a chemoinformatics project that analyzes the relationship between str
     * [Clustering](#5-clustering)
     * [Activity analysis](#6-activity-analysis)
     * [Visualization](#7-visualization)
+* [Scope and focus](#scope-and-focus)
+    * [A general pipeline with a specific purpose](#a-general-pipeline-with-a-specific-purpose)
+    * [Why DNA repair](#why-dna-repair)
 * [Project structure](#project-structure)
 * [Installation](#installation)
 * [Usage](#usage)
@@ -150,6 +153,25 @@ The results are presented through several types of plots:
 - **Cluster activity boxplots** - distribution of pIC50 within each cluster, making it easy to spot active vs. inactive clusters
 - **Activity cliff scatter** - Tanimoto similarity vs. |ΔpIC50| for all molecule pairs, highlighting activity cliffs
 - **SALI network** - graph where nodes are molecules and edges connect pairs with high SALI scores
+
+
+
+# Scope and focus
+
+### A general pipeline with a specific purpose
+
+The core of TaniMol — fetching data from ChEMBL, generating fingerprints, computing Tanimoto similarity, clustering, and detecting activity cliffs — is **target-agnostic**. It works with any set of molecules and any bioactivity endpoint. If you wanted to analyze kinase inhibitors, GPCR ligands, or antibiotic candidates, you could use the same pipeline without modification. The only input that changes is which target you query from the database.
+
+This makes TaniMol a reusable framework for structure-activity landscape analysis on any ChEMBL target.
+
+
+### Why DNA repair
+
+This project deliberately focuses on **DNA repair protein inhibitors** as its primary case study. I chose it because the DNA repair field has several properties that make it particularly well-suited for this kind of analysis:
+
+- **Multiple related targets** — PARP1, PARP2, ATR, ATM, and DNA-PKcs are all part of the DNA damage response, but they belong to different repair pathways (BER, checkpoint signaling, NHEJ). This creates a natural framework for cross-target comparisons that wouldn't exist with a single isolated protein.
+- **Clinical relevance** — PARP inhibitors (olaparib, niraparib, rucaparib, talazoparib) are already approved drugs for breast and ovarian cancer. ATR and DNA-PKcs inhibitors are in clinical trials. Analyzing these molecules can connect directly to real-world drug discovery and development.
+- **Data availability** — these targets have well-populated bioactivity datasets in ChEMBL.
 
 
 
