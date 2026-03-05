@@ -5,40 +5,36 @@
 TaniMol is a chemoinformatics project that analyzes the relationship between structural similarity and biological activity of DNA repair protein inhibitors. It takes bioactivity data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes each molecule as a fingerprint, computes pairwise Tanimoto similarity, groups the compounds into clusters, and then examines how the activity (IC50) is distributed within and between those clusters.
 
 ![Stage](https://img.shields.io/badge/Stage-Architecture_Design-blueviolet)
-![Research](https://img.shields.io/badge/Research-Theoretical-orange)
-![No Code Yet](https://img.shields.io/badge/Code-None_Yet-lightgrey)
+![Code](https://img.shields.io/badge/Code-In_progress-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 > [!NOTE]
 > **PRE-DEVELOPMENT — ARCHITECTURE & RESEARCH PHASE**
 >
 > This project currently exists as a collection of design documents and theoretical research.
-> There is no functional code at this stage. The repository is used to track architectural decisions, explore concepts, and lay the groundwork before implementation begins.
-
+> There is very little functional code at this stage. The repository is used to track architectural decisions, explore concepts, and lay the groundwork before implementation begins.
 
 # Table of contents
 
-* [Background](#background)
-    * [DNA repair proteins as drug targets](#dna-repair-proteins-as-drug-targets)
-    * [What is structure-activity analysis](#what-is-structure-activity-analysis)
-    * [Why Tanimoto similarity](#why-tanimoto-similarity)
-* [How the pipeline works](#how-the-pipeline-works)
-    * [Data acquisition](#1-data-acquisition)
-    * [Preprocessing](#2-preprocessing)
-    * [Fingerprint generation](#3-fingerprint-generation)
-    * [Similarity matrix](#4-similarity-matrix)
-    * [Clustering](#5-clustering)
-    * [Activity analysis](#6-activity-analysis)
-    * [Visualization](#7-visualization)
-* [Scope and focus](#scope-and-focus)
-    * [A general pipeline with a specific purpose](#a-general-pipeline-with-a-specific-purpose)
-    * [Why DNA repair](#why-dna-repair)
-* [Project structure](#project-structure)
-* [Installation](#installation)
-* [Usage](#usage)
-* [License](#license)
-
-
+- [Background](#background)
+  - [DNA repair proteins as drug targets](#dna-repair-proteins-as-drug-targets)
+  - [What is structure-activity analysis](#what-is-structure-activity-analysis)
+  - [Why Tanimoto similarity](#why-tanimoto-similarity)
+- [How the pipeline works](#how-the-pipeline-works)
+  - [Data acquisition](#1-data-acquisition)
+  - [Preprocessing](#2-preprocessing)
+  - [Fingerprint generation](#3-fingerprint-generation)
+  - [Similarity matrix](#4-similarity-matrix)
+  - [Clustering](#5-clustering)
+  - [Activity analysis](#6-activity-analysis)
+  - [Visualization](#7-visualization)
+- [Scope and focus](#scope-and-focus)
+  - [A general pipeline with a specific purpose](#a-general-pipeline-with-a-specific-purpose)
+  - [Why DNA repair](#why-dna-repair)
+- [Project structure](#project-structure)
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
 
 # Background
 
@@ -48,7 +44,6 @@ Cells have specialized proteins that fix DNA damage. Tumors often depend on spec
 
 This project takes those inhibitor collections and analyzes them from a structural perspective.
 
-
 ### What is structure-activity analysis
 
 The basic idea is simple: take a set of molecules that have been tested against the same protein, and check whether the ones that look alike (structurally) also behave alike (in terms of potency).
@@ -56,7 +51,6 @@ The basic idea is simple: take a set of molecules that have been tested against 
 In practice, the relationship between structure and activity is not always straightforward. Sometimes two molecules differ by a single atom yet show completely different potencies. These cases are called **activity cliffs** and they are the most interesting part of the analysis, because they point to structural features that strongly influence biological activity.
 
 The opposite is also informative: when a whole cluster of structurally similar molecules has consistently high (or low) activity, that cluster likely represents a coherent chemical series worth further investigation.
-
 
 ### Why Tanimoto similarity
 
@@ -71,9 +65,7 @@ The formula itself is straightforward:
 
 $$T(A, B) = \frac{c}{a + b - c}$$
 
-Where *a* and *b* are the number of "on" bits in each fingerprint, and *c* is the number of bits that are "on" in both. When two molecules have identical fingerprints, T = 1. When they share nothing, T = 0.
-
-
+Where _a_ and _b_ are the number of "on" bits in each fingerprint, and _c_ is the number of bits that are "on" in both. When two molecules have identical fingerprints, T = 1. When they share nothing, T = 0.
 
 # How the pipeline works
 
@@ -84,7 +76,6 @@ Where *a* and *b* are the number of "on" bits in each fingerprint, and *c* is th
 Bioactivity data comes from [ChEMBL](https://www.ebi.ac.uk/chembl/), a public database of bioactive molecules maintained by the European Bioinformatics Institute. The ChEMBL API only allows paginated access to individual records, so instead of querying it record by record, the project downloads the full ChEMBL SQLite database dump from the [EBI FTP server](https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/).
 
 The `scripts/fetch_data.py` script handles this automatically — it downloads the archive, extracts the `.db` file into `data/raw/`, and cleans up temporary files. Once the database is local, all subsequent filtering and querying is done offline using SQL, which is both faster and more reliable than API calls.
-
 
 ### 2. Preprocessing
 
@@ -98,7 +89,6 @@ Raw ChEMBL data needs cleaning before analysis:
 
 After this step, each row in the dataset is one unique molecule with a clean SMILES string, a target label, and a pIC50 value.
 
-
 ### 3. Fingerprint generation
 
 Each molecule is converted into a binary fingerprint - a fixed-length vector of 0s and 1s where each bit represents the presence or absence of a particular substructural feature.
@@ -107,7 +97,6 @@ The primary fingerprint type is **Morgan (ECFP4)** with radius 2 and 2048 bits. 
 
 The code also supports MACCS Keys (166 predefined structural patterns) and RDKit topological fingerprints as alternatives, since different fingerprint types can give different similarity rankings. Comparing results across fingerprint types is part of the analysis.
 
-
 ### 4. Similarity matrix
 
 Once all molecules have fingerprints, a pairwise Tanimoto similarity matrix is computed. For a dataset of N molecules, this is an N×N symmetric matrix where entry (i, j) is the Tanimoto coefficient between molecules i and j. The diagonal is always 1.0 (a molecule is identical to itself).
@@ -115,7 +104,6 @@ Once all molecules have fingerprints, a pairwise Tanimoto similarity matrix is c
 For efficiency, the computation uses RDKit's `BulkTanimotoSimilarity`, which is implemented in C++ and much faster than computing each pair individually in Python.
 
 The **distance matrix** (1 − Tanimoto) is also computed, since most clustering algorithms work with distances rather than similarities.
-
 
 ### 5. Clustering
 
@@ -130,7 +118,6 @@ A key advantage of Butina over methods like K-Means is that you don't need to sp
 
 **Hierarchical clustering** (using scipy's linkage) is applied as a second method for comparison. It produces a dendrogram showing the relationships between all molecules, which is useful for visual inspection even when Butina is the primary method.
 
-
 ### 6. Activity analysis
 
 This is the core analytical step - checking whether structural clusters correspond to activity groups. Several analyses are performed:
@@ -143,7 +130,6 @@ This is the core analytical step - checking whether structural clusters correspo
 
 **Similarity-activity correlation**: Overall statistical test (Spearman correlation) between pairwise Tanimoto similarity and pairwise |ΔpIC50|. A strong negative correlation would mean similar molecules do tend to have similar activity.
 
-
 ### 7. Visualization
 
 The results are presented through several types of plots:
@@ -154,8 +140,6 @@ The results are presented through several types of plots:
 - **Activity cliff scatter** - Tanimoto similarity vs. |ΔpIC50| for all molecule pairs, highlighting activity cliffs
 - **SALI network** - graph where nodes are molecules and edges connect pairs with high SALI scores
 
-
-
 # Scope and focus
 
 ### A general pipeline with a specific purpose
@@ -164,7 +148,6 @@ The core of TaniMol — fetching data from ChEMBL, generating fingerprints, comp
 
 This makes TaniMol a reusable framework for structure-activity landscape analysis on any ChEMBL target.
 
-
 ### Why DNA repair
 
 This project deliberately focuses on **DNA repair protein inhibitors** as its primary case study. I chose it because the DNA repair field has several properties that make it particularly well-suited for this kind of analysis:
@@ -172,8 +155,6 @@ This project deliberately focuses on **DNA repair protein inhibitors** as its pr
 - **Multiple related targets** — PARP1, PARP2, ATR, ATM, and DNA-PKcs are all part of the DNA damage response, but they belong to different repair pathways (BER, checkpoint signaling, NHEJ). This creates a natural framework for cross-target comparisons that wouldn't exist with a single isolated protein.
 - **Clinical relevance** — PARP inhibitors (olaparib, niraparib, rucaparib, talazoparib) are already approved drugs for breast and ovarian cancer. ATR and DNA-PKcs inhibitors are in clinical trials. Analyzing these molecules can connect directly to real-world drug discovery and development.
 - **Data availability** — these targets have well-populated bioactivity datasets in ChEMBL.
-
-
 
 # Project structure
 
@@ -206,6 +187,7 @@ TaniMol/
 ```
 
 The `src/` modules are designed to be imported from the notebook:
+
 ```python
 from src.preprocessing import load_and_clean
 from src.fingerprints import generate_fingerprints
@@ -213,7 +195,6 @@ from src.similarity import tanimoto_matrix
 ```
 
 Each module handles one step of the pipeline. Analysis parameters (fingerprint radius, clustering threshold, etc.) are defined at the top of the notebook so they're visible and easy to adjust.
-
 
 # Installation
 
@@ -224,14 +205,15 @@ pip install -r requirements.txt
 ```
 
 RDKit is the only dependency that can be tricky to install. If `pip install rdkit` doesn't work, the recommended approach is through conda:
+
 ```bash
 conda install -c conda-forge rdkit
 ```
 
-
 # Usage
 
 The intended workflow is through the Jupyter notebook:
+
 ```bash
 jupyter notebook notebooks/01_analysis.ipynb
 ```
@@ -239,14 +221,17 @@ jupyter notebook notebooks/01_analysis.ipynb
 The notebook runs the full pipeline step by step with explanations and generates all plots inline. All heavy computation is handled by the `src/` modules, so the notebook itself stays clean and focused on the analysis narrative.
 
 To fetch fresh data from ChEMBL (requires internet):
+
 ```bash
 python src/fetch_data.py
 ```
 
 > **Note:** Before running, verify the ChEMBL version in `config.py` is up to date:
+>
 > ```python
 > CHEMBL_VERSION = "36"  # change this to the desired version
 > ```
+>
 > The latest version can be found at [ChEMBL Downloads](https://chembl.gitbook.io/chembl-interface-documentation/downloads).
 > Alternatively, you can manually download the `chembl_XX_sqlite.tar.gz` file from the link above and place it in the `src/` folder. The script will extract and move the database file automatically. **Do not rename the downloaded file** — the script relies on ChEMBL's default naming convention (`chembl_XX_sqlite.tar.gz`) and will not recognize renamed files.
 >
