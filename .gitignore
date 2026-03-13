@@ -206,9 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Database files
-chembl_*/
-*.tar.gz
-*.db
-*.sqlite
-*.sqlite3
+# Data files
+data/processed/*
+data/raw/*

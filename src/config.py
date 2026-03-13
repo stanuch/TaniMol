@@ -1,9 +1,15 @@
 from pathlib import Path
+from datetime import datetime
 
 # === ChEMBL database version ===
 
 CHEMBL_VERSION = "36"
 DB_FILENAME = f"chembl_{CHEMBL_VERSION}.db"
+
+
+# === Output filename (change if needed) ===
+
+OUTPUT_FILE_NAME = "cleaned_activities.csv"
 
 
 # === Paths ===
@@ -13,6 +19,7 @@ SRC_DIR = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
+OUTPUT_PATH = PROCESSED_DIR / OUTPUT_FILE_NAME
 URL = f"https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/chembl_{CHEMBL_VERSION}_sqlite.tar.gz"
 ARCHIVE_PATH = SRC_DIR / f"chembl_{CHEMBL_VERSION}_sqlite.tar.gz"
 DB_PATH = RAW_DIR / f"chembl_{CHEMBL_VERSION}.db"

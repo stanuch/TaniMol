@@ -4,15 +4,14 @@
 
 TaniMol is a chemoinformatics project that analyzes the relationship between structural similarity and biological activity of DNA repair protein inhibitors. It takes bioactivity data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes each molecule as a fingerprint, computes pairwise Tanimoto similarity, groups the compounds into clusters, and then examines how the activity (IC50) is distributed within and between those clusters.
 
-![Stage](https://img.shields.io/badge/Stage-Architecture_Design-blueviolet)
-![Code](https://img.shields.io/badge/Code-In_progress-lightgrey)
+![Stage](https://img.shields.io/badge/Stage-Preprocessing-blue)
+![Code](https://img.shields.io/badge/Code-In_progress-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 > [!NOTE]
-> **PRE-DEVELOPMENT — ARCHITECTURE & RESEARCH PHASE**
+> **EARLY DEVELOPMENT — DATA PREPROCESSING COMPLETE**
 >
-> This project currently exists as a collection of design documents and theoretical research.
-> There is very little functional code at this stage. The repository is used to track architectural decisions, explore concepts, and lay the groundwork before implementation begins.
+> The data acquisition and preprocessing pipeline is fully functional. The project can download ChEMBL data, clean it, standardize molecules, and produce a processed dataset ready for fingerprinting and analysis. Remaining pipeline steps (fingerprints, similarity, clustering, visualization) are not yet implemented.
 
 # Table of contents
 
@@ -176,8 +175,8 @@ TaniMol/
 │   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics
 │   └── visualization.py     # All plotting functions
 │
-├── notebooks/
-│   └── 01_analysis.ipynb    # Full analysis notebook with explanations and plots
+├── notebooks/               # Jupyter notebooks for analysis
+│
 │
 ├── results/                 # Generated plots, tables, exported figures
 ├── tests/                   # Unit tests for core modules
@@ -189,33 +188,45 @@ TaniMol/
 The `src/` modules are designed to be imported from the notebook:
 
 ```python
-from src.preprocessing import load_and_clean
-from src.fingerprints import generate_fingerprints
-from src.similarity import tanimoto_matrix
+from src.preprocessing import fetch_activity_data, standardize_molecules, deduplicate...
+from src.fingerprints import generate_fingerprints  # not yet implemented
+from src.similarity import tanimoto_matrix  # not yet implemented
 ```
 
 Each module handles one step of the pipeline. Analysis parameters (fingerprint radius, clustering threshold, etc.) are defined at the top of the notebook so they're visible and easy to adjust.
 
 # Installation
 
+The recommended way to install TaniMol is using Conda, as it properly handles the RDKit dependency.
+
+1. Clone the repository:
+
 ```bash
 git clone https://github.com/stanuch/TaniMol.git
 cd TaniMol
-pip install -r requirements.txt
 ```
 
-RDKit is the only dependency that can be tricky to install. If `pip install rdkit` doesn't work, the recommended approach is through conda:
+2. Create the conda environment and activate it:
 
 ```bash
-conda install -c conda-forge rdkit
+conda env create -f environment.yml
+conda activate tanimol
 ```
+
+3. Install the project in editable mode:
+
+```bash
+pip install -e .
+```
+
+This makes the `src/` modules available anywhere in the project without needing to modify the Python path.
 
 # Usage
 
 The intended workflow is through the Jupyter notebook:
 
 ```bash
-jupyter notebook notebooks/01_analysis.ipynb
+jupyter notebook notebooks/[*.ipynb]
 ```
 
 The notebook runs the full pipeline step by step with explanations and generates all plots inline. All heavy computation is handled by the `src/` modules, so the notebook itself stays clean and focused on the analysis narrative.
