@@ -1,9 +1,4 @@
-"""
-Preprocessing pipeline for ChEMBL activity data.
-
-Functions for fetching, cleaning, and preparing bioactivity data
-for downstream analysis in notebooks.
-"""
+"""Preprocessing pipeline for ChEMBL bioactivity data."""
 
 import sqlite3
 import numpy as np
@@ -14,26 +9,11 @@ from tqdm import tqdm
 
 
 def fetch_activity_data(db_path, targets, min_confidence, activity_types, activity_units):
-    """
-    Fetch activity data from ChEMBL SQLite database.
+    """Query ChEMBL SQLite database for bioactivity records.
 
-    Parameters
-    ----------
-    db_path : str or Path
-        Path to the ChEMBL SQLite database file.
-    targets : dict
-        Dictionary with target ChEMBL IDs as keys.
-    min_confidence : int
-        Minimum assay confidence score.
-    activity_types : list of str
-        Activity types to include (e.g. ["IC50", "Ki"]).
-    activity_units : str
-        Expected unit for standard_value (e.g. "nM").
-
-    Returns
-    -------
-    pd.DataFrame
-        Raw activity data.
+    Builds a parameterized SQL query from targets dict keys and
+    activity_types list. Filters by confidence_score >= min_confidence.
+    Connection is opened and closed automatically.
     """
     target_ids = list(targets.keys())
     activity_placeholders = ", ".join("?" * len(activity_types))
@@ -68,41 +48,12 @@ def fetch_activity_data(db_path, targets, min_confidence, activity_types, activi
 
 
 def drop_missing_values(df, column="standard_value"):
-    """
-    Drop rows where the given column has missing values.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-    column : str
-        Column to check for missing values.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with missing values removed.
-    """
     df = df.dropna(subset=[column])
     return df
 
 
 def validate_smiles(df, smiles_column="canonical_smiles"):
-    """
-    Validate SMILES strings using RDKit and remove invalid ones.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-    smiles_column : str
-        Name of the column containing SMILES strings.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with only valid SMILES.
-    """
+    """Drop rows whose SMILES cannot be parsed by RDKit (MolFromSmiles returns None)."""
     valid_mask = df[smiles_column].apply(
         lambda smi: Chem.MolFromSmiles(smi) is not None
     )
@@ -110,30 +61,17 @@ def validate_smiles(df, smiles_column="canonical_smiles"):
 
 
 def standardize_molecules(df, smiles_column="canonical_smiles"):
-    """
-    Standardize molecular structures.
+    """Standardize SMILES in place: strip salts → neutralize → canonicalize tautomers.
 
-    Steps:
-    - Strip salts (keep largest fragment)
-    - Neutralize charges
-    - Canonical tautomer
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-    smiles_column : str
-        Name of the column containing SMILES strings.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with standardized SMILES.
+    Uses RDKit's LargestFragmentChooser, Uncharger, and TautomerEnumerator.
+    Rows where MolFromSmiles returns None are silently skipped (SMILES unchanged).
+    Modifies the DataFrame in place, but also returns it for chaining.
     """
     chooser = rdMolStandardize.LargestFragmentChooser()
     uncharger = rdMolStandardize.Uncharger()
     tautomer_canonicalizer = rdMolStandardize.TautomerEnumerator()
 
+    df = df.copy()
     for i, row in tqdm(df.iterrows(), total=len(df), desc="Standardizing"):
         mol = Chem.MolFromSmiles(row[smiles_column])
         if mol is None:
@@ -147,24 +85,10 @@ def standardize_molecules(df, smiles_column="canonical_smiles"):
 
 def deduplicate(df, target_column="target_chembl_id", smiles_column="canonical_smiles",
                 value_column="standard_value"):
-    """
-    Deduplicate by (target, SMILES) keeping the row with the lowest (best) IC50.
+    """Keep one row per (target, SMILES) pair — the one with the lowest IC50.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-    target_column : str
-        Column with target identifiers.
-    smiles_column : str
-        Column with SMILES strings.
-    value_column : str
-        Column with activity value (lower = better).
-
-    Returns
-    -------
-    pd.DataFrame
-        Deduplicated DataFrame.
+    Assumes lower value_column = more potent. Sorts ascending then
+    drops duplicates keeping first.
     """
     df = df.sort_values(by=value_column)
     df = df.drop_duplicates(subset=[target_column, smiles_column], keep="first")
@@ -172,25 +96,11 @@ def deduplicate(df, target_column="target_chembl_id", smiles_column="canonical_s
 
 
 def compute_pic50(df, pchembl_column="pchembl_value", value_column="standard_value"):
-    """
-    Compute pIC50 values.
+    """Fill missing pchembl_value using pIC50 = −log10(IC50_nM × 1e−9).
 
-    If pchembl_value is already present, use it.
-    If missing, calculate: pIC50 = -log10(standard_value * 1e-9).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame.
-    pchembl_column : str
-        Column with existing pChEMBL values.
-    value_column : str
-        Column with standard_value in nM.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with a 'pic50' column.
+    Existing pchembl values are kept as-is. Rows with IC50 ≤ 0 will
+    remain NaN (log of non-positive is undefined) — drop them afterwards.
+    Expects standard_value in nM.
     """
     for i, row in tqdm(df.iterrows(), total=len(df), desc="Computing pIC50"):
         if pd.isna(df.loc[i, pchembl_column]):
@@ -201,18 +111,6 @@ def compute_pic50(df, pchembl_column="pchembl_value", value_column="standard_val
 
 
 def save_cleaned_data(df, output_path, targets=None):
-    """
-    Save cleaned DataFrame to CSV and print summary.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Cleaned DataFrame.
-    output_path : str or Path
-        Path for the output CSV file.
-    targets : dict, optional
-        Target dictionary for summary reporting.
-    """
     df.to_csv(output_path, index=False)
     print(f"Saved {len(df)} rows to {output_path}")
     if targets:
