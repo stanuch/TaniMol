@@ -4,8 +4,10 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from rdkit import Chem
-from rdkit.Chem import AllChem, MACCSkeys, RDKFingerprint
+from rdkit.Chem import AllChem, MACCSkeys
 from tqdm import tqdm
+
+from src.config import MORGAN_RADIUS
 
 
 def mol_from_smiles(smiles):
@@ -16,7 +18,7 @@ def mol_from_smiles(smiles):
 
 
 
-def generate_morgan_fp(mol, radius=2, n_bits=2048):
+def generate_morgan_fp(mol, radius=MORGAN_RADIUS, n_bits=2048):
     """Generate Morgan (ECFP) fingerprint as a NumPy bit array.
 
     radius=2 corresponds to ECFP4, radius=3 to ECFP6.
