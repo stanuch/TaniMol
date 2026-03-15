@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import AllChem, MACCSkeys, RDKFingerprint
 from tqdm import tqdm
@@ -70,4 +71,24 @@ def add_fingerprints(df, fp_type, smiles_column="canonical_smiles", **kwargs):
         else:
             fingerprints.append(None)
 
+    return fingerprints
+
+
+def save_fingerprints(fps, path):
+
+    none_count = sum(1 for fp in fps if fp is None)
+    if none_count > 0:
+        raise ValueError(
+            f"{none_count}/{len(fps)} fingerprints are None — "
+            "clean your data before saving."
+        )
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(path, np.array(fps))
+    print(f"Saved {len(fps)} fingerprints to {path}")
+
+
+def load_fingerprints(path):
+    fingerprints = np.load(path)
     return fingerprints
