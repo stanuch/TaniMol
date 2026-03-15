@@ -3,7 +3,7 @@
 Current status and planned development for TaniMol.
 
 
-## Phase 1 — Project setup ✅
+## Phase 1 — Project setup
 
 - [x] Define research question and scope
 - [x] Design project structure (directories, modules)
@@ -16,30 +16,20 @@ Current status and planned development for TaniMol.
 
 - [x] Research and select DNA repair targets from ChEMBL
 - [x] Write `scripts/fetch_data.py` to download ChEMBL SQLite database dump
-- [ ] Inspect the data: number of compounds per target, activity ranges, quality
+- [x] Inspect the data: number of compounds per target, activity ranges, quality
 
 
 ## Phase 3 — Core pipeline
 
-- [ ] `src/preprocessing.py` — SMILES validation, salt stripping, standardization, pIC50 conversion
-- [ ] `src/fingerprints.py` — Morgan (ECFP4), MACCS, RDKit fingerprint generation
-- [ ] `src/similarity.py` — Tanimoto similarity matrix + distance matrix
+- [x] `src/preprocessing.py` — SMILES validation, salt stripping, standardization, pIC50 conversion
+- [x] `src/fingerprints.py` — Morgan (ECFP4), MACCS, RDKit fingerprint generation
+- [x] `src/similarity.py` — Tanimoto similarity matrix + distance matrix
 - [ ] `src/clustering.py` — Butina clustering + hierarchical clustering
 - [ ] `src/activity_analysis.py` — Activity cliff detection, SALI, correlation statistics
 - [ ] `src/visualization.py` — Heatmaps, chemical space maps, boxplots, cliff plots, SALI network
 
 
-## Phase 4 — Analysis notebook
-
-- [ ] `notebooks/01_analysis.ipynb` — Full end-to-end analysis
-  - Data loading and EDA
-  - Chemical space visualization (t-SNE/UMAP)
-  - Similarity matrix and clustering
-  - SAR analysis and activity cliffs
-  - Conclusions
-
-
-## Phase 5 — Testing and polish
+## Phase 4 — Testing and polish
 
 - [ ] Unit tests for preprocessing, fingerprints, and similarity modules
 - [ ] Run the full pipeline end-to-end, verify all outputs
@@ -47,9 +37,9 @@ Current status and planned development for TaniMol.
 - [ ] Final README review
 
 
-## Phase 6 — DNA repair-specific analyses
+## Phase 5 — DNA repair-specific analyses
 
-These analyses go beyond the generic similarity pipeline and are specific to the DNA repair inhibitor domain. They require the core pipeline (Phases 2–5) to be complete first.
+These analyses go beyond the generic similarity pipeline and are specific to the DNA repair inhibitor domain. They require the core pipeline (Phases 2–4) to be complete first.
 
 ### Cross-target selectivity
 - [ ] Identify molecules tested against multiple targets (e.g. PARP1 **and** PARP2)

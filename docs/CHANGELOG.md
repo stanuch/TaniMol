@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+
+## [0.4.0] - 2026-03-16
+
+### Added
+- `src/fingerprints.py` — fingerprint generation module:
+  - `mol_from_smiles()` — parse SMILES strings safely
+  - `generate_morgan_fp()`, `generate_maccs_fp()`, `generate_rdkit_fp()` — generators for 3 fingerprint types
+  - `add_fingerprints()` — batch generation for datasets
+  - `save_fingerprints()`, `load_fingerprints()` — persist arrays to `.npy`
+- `src/similarity.py` — similarity matrix computation:
+  - `calculate_similarity_matrix()` — optimized underlying NumPy `np.dot` implementation for fast Tanimoto computation
+- `src/visualization.py` — plotting functions:
+  - `plot_similarity_heatmap()` — generates a publication-ready Tanimoto heatmap sorted by Ward hierarchical clustering
+- `notebooks/02_fingerprints.ipynb` — workflow for generating and storing dataset fingerprints
+- `notebooks/03_similarity.ipynb` — workflow for calculating matrices and performing EDA/sanity checks
+
+### Changed
+- `src/config.py` — added fingerprint storage paths (`FINGERPRINTS_DIR`, `MORGAN_FP_PATH`, etc.)
+
 ## [0.3.0] - 2026-03-13
 
 ### Added
