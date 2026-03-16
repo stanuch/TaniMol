@@ -2,7 +2,7 @@
   <img src="docs/img/tanimol_logo.png" width="600" title="TaniMol Logo" alt="TaniMol Logo">
 </p>
 
-TaniMol is a chemoinformatics project that analyzes the relationship between structural similarity and biological activity of DNA repair protein inhibitors. It takes bioactivity data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes each molecule as a fingerprint, computes pairwise Tanimoto similarity, groups the compounds into clusters, and then examines how the activity (IC50) is distributed within and between those clusters.
+TaniMol is an adaptable chemoinformatics pipeline built to map the relationship between structural similarity and biological activity. While developed and showcased using DNA repair protein inhibitors as a primary case study, it is designed to process bioactivity data for any defined pharmacological target. It extracts raw data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes molecules into fingerprints, computes pairwise Tanimoto similarity matrices, groups compounds into chemical scaffolds via clustering, and analyzes the distribution of activity (e.g., pIC50) to detect hit scaffolds and activity cliffs.
 
 ![Stage](https://img.shields.io/badge/Stage-Similarity_&_Clustering-blue)
 ![Code](https://img.shields.io/badge/Code-In_progress-yellow)
@@ -16,9 +16,10 @@ TaniMol is a chemoinformatics project that analyzes the relationship between str
 # Table of contents
 
 - [Background](#background)
-  - [DNA repair proteins as drug targets](#dna-repair-proteins-as-drug-targets)
   - [What is structure-activity analysis](#what-is-structure-activity-analysis)
+  - [Molecular fingerprints](#molecular-fingerprints)
   - [Why Tanimoto similarity](#why-tanimoto-similarity)
+  - [DNA repair proteins as drug targets](#dna-repair-proteins-as-drug-targets)
 - [How the pipeline works](#how-the-pipeline-works)
   - [Data acquisition](#1-data-acquisition)
   - [Preprocessing](#2-preprocessing)
@@ -30,6 +31,7 @@ TaniMol is a chemoinformatics project that analyzes the relationship between str
 - [Scope and focus](#scope-and-focus)
   - [A general pipeline with a specific purpose](#a-general-pipeline-with-a-specific-purpose)
   - [Why DNA repair](#why-dna-repair)
+  - [Practical applications](#practical-applications)
 - [Project structure](#project-structure)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -38,19 +40,23 @@ TaniMol is a chemoinformatics project that analyzes the relationship between str
 
 # Background
 
-### DNA repair proteins as drug targets
-
-Cells rely on specialized proteins to fix DNA damage. Tumors often depend on specific repair pathways to survive, making those proteins useful drug targets. For example, PARP1 inhibitors (olaparib, niraparib, etc.) are already approved drugs. Other targets from the same area include PARP2, ATR, ATM, and DNA-PKcs. Each of these has dozens to hundreds of known inhibitors with measured activity stored in public databases like ChEMBL.
-
-This project takes those inhibitor collections and analyzes them from a structural perspective.
-
 ### What is structure-activity analysis
 
-The basic idea is pretty simpletake a set of molecules tested against the same protein and check whether the ones that look alike (structurally) also behave alike (in terms of potency).
+The basic idea is pretty simple. Take a set of molecules tested against the same protein and check whether the ones that look alike (structurally) also behave alike (in terms of potency).
 
-In practice, the relationship between structure and activity isn't always straightforward. Sometimes two molecules differ by a single atom yet show completely different potencies. These cases, called **activity cliffs**, are the most interesting part of the analysis because they point to structural features strongly influencing biological activity.
+In practice, the relationship between structure and activity isn't always straightforward. Sometimes two molecules differ by a single atom yet show completely different potencies. These cases, called **activity cliffs**, are a very important parts of the analysis because they point to structural features strongly influencing biological activity.
 
-Conversely, when a whole cluster of structurally similar molecules has consistently high (or low) activity, that cluster likely represents a coherent chemical series worth further investigation.
+When a whole cluster of structurally similar molecules has consistently high (or low) activity, that cluster likely represents a coherent chemical series worth further investigation.
+
+### Molecular fingerprints
+
+To compare molecules computationally, their complex 2D graphed structures must be converted into a mathematical format. **Molecular fingerprints** achieve this by encoding structural features into a binary array (a sequence of 1s and 0s). 
+
+If a specific feature (e.g., a benzene ring, a hydroxyl group, or a specific bond path) is present in the molecule, the corresponding bit in the fingerprint is set to 1. If it's absent, the bit remains 0.
+
+There are different paradigms of fingerprints, depending on how they define these "features". Substructure keys (like MACCS Keys) rely on a predefined dictionary of structural patterns (e.g., "Is there an oxygen atom?", "Is there a 5-membered ring?"). They are interpretable but represent a broad, low-resolution view of the molecule. Topological & Circular fingerprints (like RDKit, Morgan/ECFP4) traverse the molecule's chemical graph systematically. Morgan fingerprints, the primary method used in this project, iterate outwardly up to a specific radius around each atom, recording the unique circular environments. These localized substructures are then mathematically hashed into a fixed-length binary array (typically 2048 bits). This provides an exceptionally granular representation of the molecule's true local topology.
+
+These resulting arrays allow algorithms to rapidly compare thousands of molecules using efficient bitwise computer operations, forming the foundation of cheminformatics.
 
 ### Why Tanimoto similarity
 
@@ -61,6 +67,12 @@ It handles the "asymmetry problem" well - if molecule A has 10 features and B ha
 $$T(A, B) = \frac{c}{a + b - c}$$
 
 Where _a_ and _b_ are the number of "on" bits in each fingerprint, and _c_ is the number of bits that are "on" in both. When two molecules have identical fingerprints, T = 1. When they share nothing, T = 0.
+
+### DNA repair proteins as drug targets
+
+Cells rely on specialized proteins to fix DNA damage. Tumors often depend on specific repair pathways to survive, making those proteins useful drug targets. For example, PARP1 inhibitors (olaparib, niraparib, etc.) are already approved drugs. Other targets from the same area include PARP2, ATR, ATM, and DNA-PKcs. Each of these has dozens to hundreds of known inhibitors with measured activity stored in public databases like ChEMBL.
+
+This project takes those inhibitor collections and analyzes them from a structural perspective.
 
 # How the pipeline works
 
@@ -128,11 +140,19 @@ In future updates, these will be added:
 
 ### A general pipeline with a specific purpose
 
-The core of TaniMol (fetching data, generating fingerprints, computing Tanimoto similarity, clustering, and detecting activity cliffs) is target-agnostic. It will work with any bioactivity dataset. The pipeline could theoretically process GPCR ligands or antibiotic candidates without modifying the base functionality.
+The core of TaniMol (fetching data, generating fingerprints, computing Tanimoto similarity, clustering, and detecting activity cliffs) is highly adaptable. It will work with any bioactivity dataset. The pipeline could theoretically process GPCR ligands or antibiotic candidates without modifying the base functionality, as long as the target ChEMBL IDs are provided.
 
 ### Why DNA repair
 
 DNA repair protein inhibitors were chosen as the primary case study because PARP1, PARP2, ATR, ATM, and DNA-PKcs are all part of the DNA damage response across different pathways. This allows for cross-target structural comparisons. Several PARP inhibitors (olaparib, niraparib) are approved cancer drugs, while ATR/DNA-PKcs inhibitors are in clinical trials. I'm just also a big fan of DNA damage and repair mechanisms.
+
+### Practical applications
+
+While the current case study revolves around DNA repair, the fundamental architecture of this pipeline is highly adaptable. It can be applied to any biological target, receptor, or enzyme, provided there is a sufficient amount of bioactivity data available for its known inhibitors or modulators. The core utility of the program lies in the early stages of the drug discovery process, specifically acting as a foundation for ligand-based virtual screening and scaffold hopping.
+
+By grouping thousands of historically tested compounds into clusters, the software maps out the relationship between specific chemical frameworks and their biological efficacy. It can be used to identify distinct, validated chemical scaffolds that consistently demonstrate high inhibitory activity, significantly reducing the reliance on random trial-and-error synthesis.
+
+When a researcher designs a new molecular entity (e.g., in a drawing tool), its structural fingerprint can be generated and compared against the predefined clusters within the database. If the new compound exhibits high mathematical similarity to a cluster characterized by potent affinity towards the target, it indicates a stronger probability of success during in vitro testing. Furthermore, analyzing the activity divergence within these families helps identify activity cliffs, where minor modifications lead to disproportionate changes in activity. These localized insights dictate which functional groups are essential for target binding and which can be safely substituted to improve the molecule's pharmacokinetic profile.
 
 # Project structure
 
