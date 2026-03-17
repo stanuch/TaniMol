@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.5.0] - 2026-03-17
+
+### Fixed
+- **Butina clustering**: replaced `squareform` with correct lower-triangle list comprehension —
+  previous implementation silently produced chemically invalid clusters by mapping distances to wrong molecule pairs
+- **Deduplication**: switched from keeping the most potent (first) IC50 to geometric median on
+  log-scale values, eliminating best-case bias in the activity dataset
+- **Fingerprint pipeline**: invalid SMILES are now filtered before fingerprint generation,
+  preserving DataFrame alignment and preventing silent `None` propagation downstream
+- **Stereochemistry**: enforced `isomericSmiles=True` in SMILES canonicalization to prevent
+  collapse of enantiomers with distinct biological activity
+- **ChEMBL query**: restricted `standard_relation` to `('=', '~')`, excluding censored
+  measurements (`>`, `<`) that were previously treated as exact values
+- **Activity types**: restricted `ACTIVITY_TYPES` to `IC50` only, removing naive pooling
+  with `Ki` (a distinct thermodynamic measure)
+
+### Changed
+- Similarity heatmap now uses UPGMA (average linkage) instead of Ward linkage —
+  Ward assumes Euclidean geometry which is invalid for Tanimoto distances on binary fingerprints
+- `standardize_molecules` refactored from `iterrows()` to `pandas.apply()` for performance
+
+### Added
+- `visualization.py` — plotting utilities: similarity distribution, cluster size distribution,
+  top-N cluster heatmap, and full similarity heatmap (sanity check)
+- `notebooks/05_visualization.ipynb` — visual analysis of clustering results
+
+### Chore
+- Pinned all dependency versions in `environment.yml`
 
 ## [0.4.0] - 2026-03-16
 
@@ -18,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `src/similarity.py` — similarity matrix computation:
   - `calculate_similarity_matrix()` — optimized underlying NumPy `np.dot` implementation for fast Tanimoto computation
 - `src/visualization.py` — plotting functions:
-  - `plot_similarity_heatmap()` — generates a publication-ready Tanimoto heatmap sorted by Ward hierarchical clustering
+  - `plot_similarity_heatmap()` — generates a Tanimoto heatmap sorted by UPGMA hierarchical clustering
 - `notebooks/02_fingerprints.ipynb` — workflow for generating and storing dataset fingerprints
 - `notebooks/03_similarity.ipynb` — workflow for calculating matrices and performing EDA/sanity checks
 

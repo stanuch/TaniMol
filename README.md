@@ -4,14 +4,14 @@
 
 TaniMol is an adaptable chemoinformatics pipeline built to map the relationship between structural similarity and biological activity. While developed and showcased using DNA repair protein inhibitors as a primary case study, it is designed to process bioactivity data for any defined pharmacological target. It extracts raw data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes molecules into fingerprints, computes pairwise Tanimoto similarity matrices, groups compounds into chemical scaffolds via clustering, and analyzes the distribution of activity (e.g., pIC50) to detect hit scaffolds and activity cliffs.
 
-![Stage](https://img.shields.io/badge/Stage-Similarity_&_Clustering-blue)
+![Stage](https://img.shields.io/badge/Stage-Clustering_%26_Visualization-blue)
 ![Code](https://img.shields.io/badge/Code-In_progress-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 > [!NOTE]
-> **MID DEVELOPMENT — SIMILARITY ANALYSIS COMPLETE**
+> **MID DEVELOPMENT — CLUSTERING COMPLETE**
 >
-> The pipeline acquires data, standardizes molecules, generates fingerprints (Morgan, MACCS, RDKit), and computes Tanimoto similarity matrices. Hierarchical clustering has been applied for heatmap visualizations. Next step is extracting concrete clusters.
+> The pipeline acquires data, standardizes molecules, generates fingerprints (Morgan, MACCS, RDKit), computes Tanimoto similarity matrices, and groups compounds into clusters via Butina clustering. Cluster visualizations are in place. Next step is activity analysis (SALI, activity cliffs, SAR statistics).
 
 # Table of contents
 
@@ -91,7 +91,7 @@ Raw ChEMBL data needs cleaning:
 - **SMILES validation** - discard invalid structures using RDKit
 - **Salt stripping** - keep only the active molecule
 - **Tautomer standardization** - unify different representations of the same molecule
-- **Duplicate handling** - keep the entry with the lowest (best) IC50 for multiple appearances
+- **Duplicate handling** - for multiple measurements of the same molecule, compute the geometric median on log-scale IC50 (equivalent to the median pIC50), avoiding best-case bias
 - **pIC50 conversion** - transform nM $IC50$ to $pIC50 = −log_{10}(IC50 × 10^{9})$ for a uniform scale
 
 This yields a dataset where each row is one unique molecule with a clean SMILES string, a target label, and a pIC50 value.
@@ -102,15 +102,19 @@ Each molecule is converted into a binary fingerprint. The primary type is **Morg
 
 ### 4. Similarity matrix
 
-A pairwise Tanimoto similarity matrix is computed for all molecules. For a dataset of ~11,000 molecules, this generates an $N×N$ symmetric matrix yielding ~121 million pairs. 
+A pairwise Tanimoto similarity matrix is computed for all molecules. For a dataset of ~7,000 molecules, this generates an $N×N$ symmetric matrix yielding ~24 million pairs. 
 
-To execute this efficiently, the pipeline uses a vectorized NumPy dot-product approach (`float32` intersection via matrix multiplication). This method completes the ~121M pairwise computations in about 0.5 seconds on a standard CPU (*tested on AMD Ryzen 5 7600X*). Distance matrices (1 − Tanimoto) are also generated for the clustering algorithms.
+To execute this efficiently, the pipeline uses a vectorized NumPy dot-product approach (`float32` intersection via matrix multiplication). This method completes the pairwise computations in under a second on a standard CPU (*tested on AMD Ryzen 5 7600X*). Distance matrices (1 − Tanimoto) are also generated for the clustering algorithms.
+
+> **Note:** The similarity matrix computation is O(n²) in both time and memory. For the current dataset (~7k molecules) this requires ~196MB. For datasets exceeding ~50k molecules, consider sparse matrix approaches or `BulkTanimotoSimilarity` from RDKit.
 
 ### 5. Clustering
 
-In the upcoming phase, molecules will be grouped into clusters based on structural similarity. The primary method will be Butina clustering, counting neighbors within a defined Tanimoto distance threshold. 
+Molecules are grouped into clusters using **Butina clustering** — a sphere-exclusion algorithm that assigns each molecule to a cluster if it falls within a defined Tanimoto distance threshold (default: 0.6) of the cluster centroid. The centroid is the molecule with the highest number of neighbors.
 
-Currently, hierarchical clustering (using scipy's Ward linkage) is applied to sort the Similarity Heatmaps and visualize dense "islands" of analogs lying on the diagonal.
+At threshold 0.6, the current dataset yields **877 clusters** and **658 singletons** across ~7,000 molecules. The largest cluster contains 243 molecules.
+
+UPGMA (average linkage) hierarchical clustering is additionally used to sort the similarity heatmaps and surface diagonal "islands" of structural analogs. UPGMA is used rather than Ward linkage because Ward assumes Euclidean geometry, which is invalid for Tanimoto distances on binary fingerprints.
 
 ### 6. Activity analysis
 
@@ -125,7 +129,15 @@ Currently, hierarchical clustering (using scipy's Ward linkage) is applied to so
 ### 7. Visualization
 
 The project currently outputs:
-- **Similarity heatmap** - the full N×N Tanimoto matrix displayed as a heatmap with the hierarchical clustering dendrogram ordering
+- **Similarity heatmap** — full N×N Tanimoto matrix sorted by UPGMA clustering; used as a sanity check to confirm diagonal cluster structure is present
+- **Similarity distribution** — overlaid histograms of pairwise Tanimoto values for all three fingerprint types, showing the chemical diversity of the dataset
+- **Cluster size distribution** — bar chart of how many clusters fall into each size bin (singleton / 2–5 / 6–20 / 21–50 / >50), compared across fingerprint types
+- **Top-N cluster heatmap** — submatrix heatmap of the largest N clusters with white boundary lines; reveals internal cluster cohesion and inter-cluster relationships
+
+In future updates, these will be added:
+- **Chemical space map** — t-SNE or UMAP projection of fingerprints into 2D
+- **Cluster activity boxplots** — pIC50 distributions per cluster
+- **Activity cliff scatter & SALI network**
 
 <p align="center">
   <img src="docs/img/sample_heatmap.png" width="500" title="Morgan Fingerprint Heatmap Example" alt="Heatmap Example">
@@ -170,7 +182,7 @@ TaniMol/
 │   ├── preprocessing.py     # Clean SMILES, compute pIC50, deduplicate
 │   ├── fingerprints.py      # Generate Morgan/MACCS/RDKit fingerprints
 │   ├── similarity.py        # Compute Tanimoto similarity and distance matrices
-│   ├── clustering.py        # Butina and hierarchical clustering [TODO]
+│   ├── clustering.py        # Butina clustering
 │   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics [TODO]
 │   └── visualization.py     # All plotting functions
 │
