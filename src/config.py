@@ -15,9 +15,10 @@ OUTPUT_FILE_NAME = "cleaned_activities.csv"
 # === Filters ===
 
 MIN_CONFIDENCE = 7
-ACTIVITY_TYPES = ("IC50", "Ki")
+ACTIVITY_TYPES = ["IC50"]
 ACTIVITY_UNITS = "nM"
 MORGAN_RADIUS = 2
+CLUSTERING_THRESHOLD = 0.6
 
 
 # === Targets for the database queries ===
