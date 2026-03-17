@@ -27,8 +27,8 @@ def cluster_similarity_matrix(similarity_matrix, threshold=0.6):
     """
     n_mols = similarity_matrix.shape[0]
     distance_matrix = np.clip(1 - similarity_matrix, 0, 1)  
-    flat_distance_matrix = squareform(distance_matrix)
-    clusters = Butina.ClusterData(flat_distance_matrix, n_mols, 1-threshold, isDistData=True)
+    dists = [distance_matrix[i, j] for i in range(1, n_mols) for j in range(i)]
+    clusters = Butina.ClusterData(dists, n_mols, 1-threshold, isDistData=True)
     
     cluster_dict = {}
     singletons = []

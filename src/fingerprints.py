@@ -63,17 +63,21 @@ def add_fingerprints(df, fp_type, smiles_column="canonical_smiles", **kwargs):
     else:
         raise ValueError("fp_type must be 'morgan', 'maccs', or 'rdkit'")
 
+    valid_mask = df[smiles_column].apply(lambda smi: mol_from_smiles(smi) is not None)
+    
+    if (~valid_mask).sum() > 0:
+        print(f"Warning: Dropped {(~valid_mask).sum()} invalid SMILES before fingerprinting.")
+
+    df = df[valid_mask].copy()
+
     fingerprints = []
-
-    for smiles in tqdm(df[smiles_column]):
+    for smiles in tqdm(df[smiles_column], desc=f"Generating {fp_type}"):
         mol = mol_from_smiles(smiles)
-        if mol is not None:
-            fp = generator(mol, **kwargs)
-            fingerprints.append(fp)
-        else:
-            fingerprints.append(None)
+        fp = generator(mol, **kwargs)
+        fingerprints.append(fp)
 
-    return fingerprints
+    df[f"{fp_type}_fp"] = fingerprints
+    return df
 
 
 def save_fingerprints(fps, path):

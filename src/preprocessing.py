@@ -25,6 +25,7 @@ def fetch_activity_data(db_path, targets, min_confidence, activity_types, activi
         cs.canonical_smiles,
         td.chembl_id  AS target_chembl_id,
         act.standard_type,
+        act.standard_relation,
         act.standard_value,
         act.standard_units,
         act.pchembl_value
@@ -35,6 +36,7 @@ def fetch_activity_data(db_path, targets, min_confidence, activity_types, activi
     JOIN compound_structures cs ON act.molregno = cs.molregno
     WHERE a.confidence_score >= ?
       AND act.standard_type  IN ({activity_placeholders})
+      AND act.standard_relation IN ('=', '~')
       AND act.standard_units  = ?
       AND td.chembl_id       IN ({target_placeholders})
     """
@@ -63,35 +65,54 @@ def validate_smiles(df, smiles_column="canonical_smiles"):
 def standardize_molecules(df, smiles_column="canonical_smiles"):
     """Standardize SMILES in place: strip salts → neutralize → canonicalize tautomers.
 
-    Uses RDKit's LargestFragmentChooser, Uncharger, and TautomerEnumerator.
+    Uses RDKit's LargestFragmentChooser, Uncharger, and TautomerEnumerator
+    via a performant pandas .apply() operation.
     Rows where MolFromSmiles returns None are silently skipped (SMILES unchanged).
-    Modifies the DataFrame in place, but also returns it for chaining.
     """
     chooser = rdMolStandardize.LargestFragmentChooser()
     uncharger = rdMolStandardize.Uncharger()
     tautomer_canonicalizer = rdMolStandardize.TautomerEnumerator()
 
-    df = df.copy()
-    for i, row in tqdm(df.iterrows(), total=len(df), desc="Standardizing"):
-        mol = Chem.MolFromSmiles(row[smiles_column])
+    def _standardize(smi):
+        mol = Chem.MolFromSmiles(smi)
         if mol is None:
-            continue
+            return smi
         mol = chooser.choose(mol)
         mol = uncharger.uncharge(mol)
         mol = tautomer_canonicalizer.Canonicalize(mol)
-        df.loc[i, smiles_column] = Chem.MolToSmiles(mol)
+        return Chem.MolToSmiles(mol, isomericSmiles=True)
+
+    df = df.copy()
+    tqdm.pandas(desc="Standardizing")
+    df[smiles_column] = df[smiles_column].progress_apply(_standardize)
     return df
 
 
 def deduplicate(df, target_column="target_chembl_id", smiles_column="canonical_smiles",
                 value_column="standard_value"):
-    """Keep one row per (target, SMILES) pair — the one with the lowest IC50.
+    """Keep one row per (target, SMILES) pair taking the geometric median IC50.
 
-    Assumes lower value_column = more potent. Sorts ascending then
-    drops duplicates keeping first.
+    Since IC50 is log-normally distributed, the geometric median is more 
+    statistically sound than the arithmetic median. Other columns keep 
+    their first occurrence.
     """
-    df = df.sort_values(by=value_column)
-    df = df.drop_duplicates(subset=[target_column, smiles_column], keep="first")
+    # Znajdź tylko poprawne (dodatnie) wartości, żeby móc zlogarytmować
+    valid_mask = df[value_column] > 0
+    
+    medians = (
+        df[valid_mask].groupby([target_column, smiles_column])[value_column]
+        .apply(lambda x: np.exp(np.median(np.log(x))))
+        .reset_index()
+    )
+
+    df_dedup = df.drop_duplicates(subset=[target_column, smiles_column], keep="first").copy()
+    df_dedup = df_dedup.drop(columns=[value_column])
+
+    df = pd.merge(df_dedup, medians, on=[target_column, smiles_column], how="left")
+    
+    # Remove compounds that had ONLY non-positive values (they became NaN after merge)
+    df = df.dropna(subset=[value_column])
+    
     return df
 
 
