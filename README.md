@@ -4,9 +4,13 @@
 
 TaniMol is an adaptable chemoinformatics pipeline built to map the relationship between structural similarity and biological activity. While developed and showcased using DNA repair protein inhibitors as a primary case study, it is designed to process bioactivity data for any defined pharmacological target. It extracts raw data from [ChEMBL](https://www.ebi.ac.uk/chembl/), encodes molecules into fingerprints, computes pairwise Tanimoto similarity matrices, groups compounds into chemical scaffolds via clustering, and analyzes the distribution of activity (e.g., pIC50) to detect hit scaffolds and activity cliffs.
 
+![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
+![Conda](https://img.shields.io/badge/Environment-Conda-green?logo=anaconda&logoColor=white)
+![Database](https://img.shields.io/badge/Database-ChEMBL_36-orange)
 ![Stage](https://img.shields.io/badge/Stage-Clustering_%26_Visualization-blue)
 ![Code](https://img.shields.io/badge/Code-In_progress-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![Last Commit](https://img.shields.io/github/last-commit/stanuch/TaniMol)
 
 > [!NOTE]
 > **MID DEVELOPMENT — CLUSTERING COMPLETE**
