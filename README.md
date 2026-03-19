@@ -7,7 +7,7 @@ TaniMol is an adaptable chemoinformatics pipeline built to map the relationship 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
 ![Conda](https://img.shields.io/badge/Environment-Conda-green?logo=anaconda&logoColor=white)
 ![Database](https://img.shields.io/badge/Database-ChEMBL_36-orange)
-![Stage](https://img.shields.io/badge/Stage-Clustering_%26_Visualization-blue)
+![Stage](https://img.shields.io/badge/Stage-Activity_Analysis-blue)
 ![Code](https://img.shields.io/badge/Code-In_progress-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Last Commit](https://img.shields.io/github/last-commit/stanuch/TaniMol)
@@ -60,8 +60,6 @@ If a specific feature (e.g., a benzene ring, a hydroxyl group, or a specific bon
 
 There are different paradigms of fingerprints, depending on how they define these "features". Substructure keys (like MACCS Keys) rely on a predefined dictionary of structural patterns (e.g., "Is there an oxygen atom?", "Is there a 5-membered ring?"). They are interpretable but represent a broad, low-resolution view of the molecule. Topological & Circular fingerprints (like RDKit, Morgan/ECFP4) traverse the molecule's chemical graph systematically. Morgan fingerprints, the primary method used in this project, iterate outwardly up to a specific radius around each atom, recording the unique circular environments. These localized substructures are then mathematically hashed into a fixed-length binary array (typically 2048 bits). This provides an exceptionally granular representation of the molecule's true local topology.
 
-These resulting arrays allow algorithms to rapidly compare thousands of molecules using efficient bitwise computer operations, forming the foundation of cheminformatics.
-
 ### Why Tanimoto similarity
 
 There are many ways to compare molecules. The **Tanimoto coefficient** applied to binary fingerprints was chosen because it's the standard approach in chemoinformatics. 
@@ -74,9 +72,7 @@ Where _a_ and _b_ are the number of "on" bits in each fingerprint, and _c_ is th
 
 ### DNA repair proteins as drug targets
 
-Cells rely on specialized proteins to fix DNA damage. Tumors often depend on specific repair pathways to survive, making those proteins useful drug targets. For example, PARP1 inhibitors (olaparib, niraparib, etc.) are already approved drugs. Other targets from the same area include PARP2, ATR, ATM, and DNA-PKcs. Each of these has dozens to hundreds of known inhibitors with measured activity stored in public databases like ChEMBL.
-
-This project takes those inhibitor collections and analyzes them from a structural perspective.
+Tumors often depend on specific repair pathways to survive, making those proteins useful drug targets. For example, PARP1 inhibitors (olaparib, niraparib, etc.) are already approved drugs. Other targets from the same area include PARP2, ATR, ATM, and DNA-PKcs. Each of these has dozens to hundreds of known inhibitors with measured activity stored in public databases like ChEMBL. This project takes those inhibitor collections and analyzes them from a structural perspective. The pipeline itself is highly flexible and completely independent of the biological target. These DNA repair proteins are just an example use case to demonstrate the tool's capabilities. The program will work for any target, provided there is enough bioactivity data available for its known inhibitors in the ChEMBL database. Alternatively, if you provide your own properly formatted dataset, you can use the pipeline to analyze absolutely anything. I chose these targets because I like working with DNA-related stuff :)
 
 # How the pipeline works
 
@@ -86,7 +82,7 @@ This project takes those inhibitor collections and analyzes them from a structur
 
 Bioactivity data comes from [ChEMBL](https://www.ebi.ac.uk/chembl/). The ChEMBL API limits paginated access, so instead of querying it record by record, the pipeline downloads the full ChEMBL SQLite database dump from the [EBI FTP server](https://ftp.ebi.ac.uk/pub/databases/chembl/ChEMBLdb/latest/). 
 
-The `scripts/fetch_data.py` downloads the archive, extracts the `.db` file into `data/raw/`, and cleans up. Once local, all filtering uses offline SQL queries, which is much faster than the API.
+The `src/fetch_data.py` downloads the archive, extracts the `.db` file into `data/raw/`, and cleans up. Once local, all filtering uses offline SQL queries, which is much faster than the API.
 
 ### 2. Preprocessing
 
@@ -109,8 +105,6 @@ Each molecule is converted into a binary fingerprint. The primary type is **Morg
 A pairwise Tanimoto similarity matrix is computed for all molecules. For a dataset of ~7,000 molecules, this generates an $N×N$ symmetric matrix yielding ~24 million pairs. 
 
 To execute this efficiently, the pipeline uses a vectorized NumPy dot-product approach (`float32` intersection via matrix multiplication). This method completes the pairwise computations in under a second on a standard CPU (*tested on AMD Ryzen 5 7600X*). Distance matrices (1 − Tanimoto) are also generated for the clustering algorithms.
-
-> **Note:** The similarity matrix computation is O(n²) in both time and memory. For the current dataset (~7k molecules) this requires ~196MB. For datasets exceeding ~50k molecules, consider sparse matrix approaches or `BulkTanimotoSimilarity` from RDKit.
 
 ### 5. Clustering
 
@@ -137,11 +131,6 @@ The project currently outputs:
 - **Similarity distribution** — overlaid histograms of pairwise Tanimoto values for all three fingerprint types, showing the chemical diversity of the dataset
 - **Cluster size distribution** — bar chart of how many clusters fall into each size bin (singleton / 2–5 / 6–20 / 21–50 / >50), compared across fingerprint types
 - **Top-N cluster heatmap** — submatrix heatmap of the largest N clusters with white boundary lines; reveals internal cluster cohesion and inter-cluster relationships
-
-In future updates, these will be added:
-- **Chemical space map** — t-SNE or UMAP projection of fingerprints into 2D
-- **Cluster activity boxplots** — pIC50 distributions per cluster
-- **Activity cliff scatter & SALI network**
 
 <p align="center">
   <img src="docs/img/sample_heatmap.png" width="500" title="Morgan Fingerprint Heatmap Example" alt="Heatmap Example">
@@ -196,6 +185,7 @@ TaniMol/
 ├── tests/                   # Unit tests for core modules
 ├── docs/img/                # Logo and README figures
 ├── environment.yml          # Conda dependencies
+├── pyproject.toml           # Build system configuration for pip install -e .
 └── LICENSE                  # MIT
 ```
 
@@ -213,7 +203,8 @@ Each module handles one step of the pipeline. Analysis parameters (fingerprint r
 
 # Installation
 
-It is recommended to install TaniMol using Conda, as it properly handles the RDKit dependency.
+TaniMol was developed and tested on Linux (Fedora). While it is fully compatible with macOS and WSL (Windows Subsystem for Linux), native Windows environments may require additional Conda configuration for RDKit.
+It is also recommended to install TaniMol using Conda, as it properly handles the RDKit dependency.
 
 1. Clone the repository:
 
@@ -262,12 +253,30 @@ python src/fetch_data.py
 >
 > **Requires:** SQLite3
 
+
+By default, the pipeline runs on a predefined set of DNA repair proteins. To analyze different targets, simply update the `TARGETS` dictionary in `src/config.py` with your desired ChEMBL IDs and custom metadata (such as names or specific biological pathways):
+
+```python
+# src/config.py
+TARGETS = {
+    "CHEMBL3105": {"name": "PARP1", "pathway": "BER"},
+    "CHEMBL5366": {"name": "PARP2", "pathway": "BER"},
+    # Add your own ChEMBL target IDs here
+}
+```
+
 # Acknowledgements
 
 Bioactivity data sourced from [ChEMBL](https://www.ebi.ac.uk/chembl/):
 - Zdrazil, Barbara et al. “The ChEMBL Database in 2023: a drug discovery platform spanning multiple bioactivity data types and time periods.” Nucleic acids research vol. 52,D1 (2024): D1180-D1192. doi:10.1093/nar/gkad1004
 
-Documentation written with the assistance of Claude Opus 4.6 (Anthropic).
+Clustering methodology based on the [Butina algorithm](https://doi.org/10.1021/ci9803381):
+- Butina, Darko. “Unsupervised Data Base Clustering Based on Daylight's Fingerprint and Tanimoto Similarity: A Fast and Automated Way To Cluster Small and Large Data Sets.” Journal of Chemical Information and Computer Sciences vol. 39,4 (1999): 747-750. doi:10.1021/ci9803381
+
+Morgan (ECFP) fingerprint generation rooted in the principles described by:
+- Rogers, David, and Mathew Hahn. “Extended-Connectivity Fingerprints.” Journal of Chemical Information and Modeling vol. 50,5 (2010): 742-754. doi:10.1021/ci100050t
+
+Documentation and portions of code were written with the assistance of Claude Opus 4.6 (Anthropic).
 
 # License
 
