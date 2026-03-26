@@ -1,5 +1,4 @@
 from pathlib import Path
-from datetime import datetime
 
 # === ChEMBL database version ===
 
@@ -26,8 +25,8 @@ CLUSTERING_THRESHOLD = 0.6
 TARGETS = {
     "CHEMBL3105": {"name": "PARP1", "pathway": "BER"},
     "CHEMBL5366": {"name": "PARP2", "pathway": "BER"},
-    "CHEMBL5024": {"name": "ATR",   "pathway": "Checkpoint"},
-    "CHEMBL3797": {"name": "ATM",   "pathway": "Checkpoint"},
+    "CHEMBL5024": {"name": "ATR", "pathway": "Checkpoint"},
+    "CHEMBL3797": {"name": "ATM", "pathway": "Checkpoint"},
     "CHEMBL3142": {"name": "DNA-PKcs", "pathway": "NHEJ"},
 }
 

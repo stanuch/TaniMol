@@ -1,7 +1,6 @@
 """Fingerprint generation (Morgan/ECFP, MACCS, RDKit topological) for Tanimoto similarity."""
 
 import numpy as np
-import pandas as pd
 from pathlib import Path
 from rdkit import Chem
 from rdkit.Chem import AllChem, MACCSkeys
@@ -15,7 +14,6 @@ def mol_from_smiles(smiles):
     if not smiles:
         return None
     return Chem.MolFromSmiles(smiles)
-
 
 
 def generate_morgan_fp(mol, radius=MORGAN_RADIUS, n_bits=2048):
@@ -64,9 +62,11 @@ def add_fingerprints(df, fp_type, smiles_column="canonical_smiles", **kwargs):
         raise ValueError("fp_type must be 'morgan', 'maccs', or 'rdkit'")
 
     valid_mask = df[smiles_column].apply(lambda smi: mol_from_smiles(smi) is not None)
-    
+
     if (~valid_mask).sum() > 0:
-        print(f"Warning: Dropped {(~valid_mask).sum()} invalid SMILES before fingerprinting.")
+        print(
+            f"Warning: Dropped {(~valid_mask).sum()} invalid SMILES before fingerprinting."
+        )
 
     df = df[valid_mask].copy()
 

@@ -8,7 +8,9 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 from tqdm import tqdm
 
 
-def fetch_activity_data(db_path, targets, min_confidence, activity_types, activity_units):
+def fetch_activity_data(
+    db_path, targets, min_confidence, activity_types, activity_units
+):
     """Query ChEMBL SQLite database for bioactivity records.
 
     Builds a parameterized SQL query from targets dict keys and
@@ -88,31 +90,38 @@ def standardize_molecules(df, smiles_column="canonical_smiles"):
     return df
 
 
-def deduplicate(df, target_column="target_chembl_id", smiles_column="canonical_smiles",
-                value_column="standard_value"):
+def deduplicate(
+    df,
+    target_column="target_chembl_id",
+    smiles_column="canonical_smiles",
+    value_column="standard_value",
+):
     """Keep one row per (target, SMILES) pair taking the geometric median IC50.
 
-    Since IC50 is log-normally distributed, the geometric median is more 
-    statistically sound than the arithmetic median. Other columns keep 
+    Since IC50 is log-normally distributed, the geometric median is more
+    statistically sound than the arithmetic median. Other columns keep
     their first occurrence.
     """
     # Znajdź tylko poprawne (dodatnie) wartości, żeby móc zlogarytmować
     valid_mask = df[value_column] > 0
-    
+
     medians = (
-        df[valid_mask].groupby([target_column, smiles_column])[value_column]
+        df[valid_mask]
+        .groupby([target_column, smiles_column])[value_column]
         .apply(lambda x: np.exp(np.median(np.log(x))))
         .reset_index()
     )
 
-    df_dedup = df.drop_duplicates(subset=[target_column, smiles_column], keep="first").copy()
+    df_dedup = df.drop_duplicates(
+        subset=[target_column, smiles_column], keep="first"
+    ).copy()
     df_dedup = df_dedup.drop(columns=[value_column])
 
     df = pd.merge(df_dedup, medians, on=[target_column, smiles_column], how="left")
-    
+
     # Remove compounds that had ONLY non-positive values (they became NaN after merge)
     df = df.dropna(subset=[value_column])
-    
+
     return df
 
 

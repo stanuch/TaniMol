@@ -38,7 +38,9 @@ else:
                 mb_total = total_size / (1024 * 1024)
                 filled = int(40 * percent / 100)
                 bar = "█" * filled + "_" * (40 - filled)
-                sys.stdout.write(f"\r  [{bar}] {percent:5.1f}%  ({mb_down:.0f}/{mb_total:.0f} MB)")
+                sys.stdout.write(
+                    f"\r  [{bar}] {percent:5.1f}%  ({mb_down:.0f}/{mb_total:.0f} MB)"
+                )
                 sys.stdout.flush()
 
         urllib.request.urlretrieve(URL, ARCHIVE_PATH, reporthook=progress)
@@ -46,10 +48,10 @@ else:
 
     print("Extracting... (May take a few minutes)")
     with tarfile.open(ARCHIVE_PATH, "r:gz") as tar:
-        tar.extractall(path=SCRIPT_DIR)
+        tar.extractall(path=SRC_DIR)
     print("Extracted!")
 
-    db_files = glob.glob(os.path.join(SCRIPT_DIR, "**", "*.db"), recursive=True)
+    db_files = glob.glob(os.path.join(SRC_DIR, "**", "*.db"), recursive=True)
 
     if not db_files:
         print("ERROR: Could not find .db file after extraction!")
@@ -62,7 +64,7 @@ else:
         os.remove(ARCHIVE_PATH)
         print("Removed .tar.gz archive.")
 
-    extracted_folder = os.path.join(SCRIPT_DIR, f"chembl_{CHEMBL_VERSION}")
+    extracted_folder = os.path.join(SRC_DIR, f"chembl_{CHEMBL_VERSION}")
     if os.path.exists(extracted_folder):
         shutil.rmtree(extracted_folder)
         print("Removed leftover extraction folders.")

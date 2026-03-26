@@ -10,6 +10,8 @@ TaniMol is an adaptable chemoinformatics pipeline built to map the relationship 
 ![Stage](https://img.shields.io/badge/Stage-Activity_Analysis-blue)
 ![Code](https://img.shields.io/badge/Code-In_progress-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![GitHub Repo Size](https://img.shields.io/github/repo-size/stanuch/TaniMol)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![Last Commit](https://img.shields.io/github/last-commit/stanuch/TaniMol)
 
 > [!NOTE]

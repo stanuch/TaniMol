@@ -119,7 +119,9 @@ def plot_cluster_size_distribution(
 
         color = FP_COLORS.get(name, "#888888")
         offset = (i - (len(names) - 1) / 2) * bar_width
-        bars = ax.bar(x + offset, counts, bar_width, label=name, color=color, alpha=0.85)
+        bars = ax.bar(
+            x + offset, counts, bar_width, label=name, color=color, alpha=0.85
+        )
 
         for bar, count in zip(bars, counts):
             if count > 0:
@@ -217,13 +219,13 @@ def plot_top_clusters_heatmap(
     ax.set_xticks(centres)
     ax.set_yticks(centres)
     ax.set_xticklabels(
-        [f"C{i+1}\n(n={s})" for i, s in enumerate(cluster_sizes)],
+        [f"C{i + 1}\n(n={s})" for i, s in enumerate(cluster_sizes)],
         fontsize=7,
         rotation=45,
         ha="right",
     )
     ax.set_yticklabels(
-        [f"C{i+1} (n={s})" for i, s in enumerate(cluster_sizes)],
+        [f"C{i + 1} (n={s})" for i, s in enumerate(cluster_sizes)],
         fontsize=7,
     )
 
@@ -304,9 +306,13 @@ def plot_similarity_heatmap(matrix: np.ndarray, name: str) -> np.ndarray:
         f"pairs ≥ 0.5: {(off_diag >= 0.5).mean() * 100:.1f}%"
     )
     fig.text(
-        0.5, -0.01, stats,
-        ha="center", fontsize=STYLE["stats_fontsize"],
-        color="#555555", fontstyle="italic",
+        0.5,
+        -0.01,
+        stats,
+        ha="center",
+        fontsize=STYLE["stats_fontsize"],
+        color="#555555",
+        fontstyle="italic",
         transform=fig.transFigure,
     )
 
