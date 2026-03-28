@@ -22,13 +22,7 @@ CLUSTERING_THRESHOLD = 0.6
 
 # === Targets for the database queries ===
 
-TARGETS = {
-    "CHEMBL3105": {"name": "PARP1", "pathway": "BER"},
-    "CHEMBL5366": {"name": "PARP2", "pathway": "BER"},
-    "CHEMBL5024": {"name": "ATR", "pathway": "Checkpoint"},
-    "CHEMBL3797": {"name": "ATM", "pathway": "Checkpoint"},
-    "CHEMBL3142": {"name": "DNA-PKcs", "pathway": "NHEJ"},
-}
+TARGETS = {"CHEMBL3105": {"name": "PARP1", "pathway": "BER"}}
 
 
 # === Paths ===
