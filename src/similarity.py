@@ -10,9 +10,6 @@ def calculate_similarity_matrix(fingerprints):
     if fingerprints.size == 0:
         return np.array([])
 
-    # NOTE: O(n^2) complexity. For n > 50k molecules consider
-    # BulkTanimotoSimilarity or sparse matrix approach.
-
     fingerprints = fingerprints.astype(np.float32)  # convert to float32 to save memory
     intersection = np.dot(fingerprints, fingerprints.T)
     counts = fingerprints.sum(axis=1)  # sum of bits for each fingerprint
