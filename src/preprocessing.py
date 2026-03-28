@@ -39,6 +39,8 @@ def fetch_activity_data(
       AND act.standard_relation IN ('=', '~')
       AND act.standard_units  = ?
       AND td.chembl_id       IN ({target_placeholders})
+      AND act.standard_value > 0
+      AND act.standard_value <= 100000
     """
 
     params = [min_confidence, *activity_types, activity_units, *target_ids]
