@@ -1,5 +1,3 @@
-"""Preprocessing pipeline for ChEMBL bioactivity data."""
-
 import sqlite3
 import numpy as np
 import pandas as pd
@@ -126,7 +124,7 @@ def deduplicate(
 
 
 def compute_pic50(df, pchembl_column="pchembl_value", value_column="standard_value"):
-    """Fill missing pchembl_value using pIC50 = −log10(IC50_nM × 1e−9).
+    """Fill missing pchembl_value using pIC50 = -log10(IC50_nM x 1e-9).
 
     Existing pchembl values are kept as-is. Rows with IC50 ≤ 0 will
     remain NaN (log of non-positive is undefined) — drop them afterwards.

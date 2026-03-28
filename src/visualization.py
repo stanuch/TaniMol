@@ -26,14 +26,6 @@ def _style_ax(ax):
 
 
 def plot_similarity_distribution(matrices: dict[str, np.ndarray]) -> None:
-    """Overlay histogram of pairwise Tanimoto similarities for each fingerprint.
-
-    Parameters
-    ----------
-    matrices : dict
-        Keys are fingerprint names (e.g. 'Morgan'), values are square
-        float32 numpy arrays with Tanimoto similarities on [0, 1].
-    """
     fig, ax = plt.subplots(figsize=(8, 5))
     fig.patch.set_facecolor(STYLE["facecolor"])
     ax.set_facecolor(STYLE["facecolor"])
@@ -82,19 +74,6 @@ def plot_cluster_size_distribution(
     singletons: dict[str, list],
     bins: list[int] | None = None,
 ) -> None:
-    """Bar chart of cluster size bins for each fingerprint, side-by-side.
-
-    Parameters
-    ----------
-    clusters : dict
-        Keys are fingerprint names, values are cluster_dict
-        {centroid_idx: (centroid_idx, member_idx, ...)} as returned by Butina.
-    singletons : dict
-        Keys are fingerprint names, values are lists of singleton indices.
-    bins : list of int, optional
-        Right-exclusive bin edges for cluster sizes.
-        Default: [1, 2, 6, 21, 51, inf]
-    """
     if bins is None:
         bins = [1, 2, 6, 21, 51, int(1e9)]
 
@@ -109,7 +88,6 @@ def plot_cluster_size_distribution(
     ax.set_facecolor(STYLE["facecolor"])
 
     for i, name in enumerate(names):
-        # Build full size list: singletons count as size 1
         sizes = [len(v) for v in clusters[name].values()] + [1] * len(singletons[name])
         sizes = np.array(sizes)
 
@@ -159,30 +137,15 @@ def plot_top_clusters_heatmap(
     top_n: int = 10,
 ) -> None:
     """Heatmap of the top_n largest clusters, molecules ordered within each cluster.
-
     Molecules are sorted by cluster membership so each block on the diagonal
     corresponds to one cluster. Cluster boundaries are marked with white lines.
-
-    Parameters
-    ----------
-    similarity_matrix : np.ndarray
-        Full n×n Tanimoto similarity matrix (float32).
-    cluster_dict : dict
-        {centroid_idx: tuple_of_member_indices} from Butina (singletons excluded).
-    name : str
-        Fingerprint name used in the plot title.
-    top_n : int
-        Number of largest clusters to include.
     """
-    # Sort clusters by descending size and take top_n
     sorted_clusters = sorted(cluster_dict.values(), key=len, reverse=True)[:top_n]
 
-    # Build ordered index list: flatten clusters in order
     ordered_indices = list(chain.from_iterable(sorted_clusters))
     cluster_sizes = [len(c) for c in sorted_clusters]
     n_shown = len(ordered_indices)
 
-    # Extract and reorder submatrix
     sub = similarity_matrix[np.ix_(ordered_indices, ordered_indices)]
 
     fig, ax = plt.subplots(figsize=(7, 6))
@@ -196,14 +159,12 @@ def plot_top_clusters_heatmap(
         interpolation="nearest",
     )
 
-    # Draw cluster boundary lines
     boundary = 0
     for size in cluster_sizes[:-1]:
         boundary += size
         ax.axhline(boundary - 0.5, color="white", linewidth=0.6, alpha=0.7)
         ax.axvline(boundary - 0.5, color="white", linewidth=0.6, alpha=0.7)
 
-    # Tick at centre of each cluster block → cluster rank label
     centres = []
     pos = 0
     for size in cluster_sizes:
@@ -242,24 +203,6 @@ def plot_top_clusters_heatmap(
 
 
 def plot_similarity_heatmap(matrix: np.ndarray, name: str) -> np.ndarray:
-    """Full n×n Tanimoto heatmap sorted by UPGMA clustering.
-
-    Use this as a quick sanity check — if the dataset has meaningful
-    chemical structure, bright diagonal blocks should be visible.
-    A uniform dark matrix means no clusters at the chosen threshold.
-
-    Parameters
-    ----------
-    matrix : np.ndarray
-        Square float32 Tanimoto similarity matrix.
-    name : str
-        Fingerprint name used in the plot title.
-
-    Returns
-    -------
-    order : np.ndarray
-        Molecule indices in UPGMA leaf order.
-    """
     n = matrix.shape[0]
     dist_matrix = np.clip(1.0 - matrix, 0.0, 1.0)
 

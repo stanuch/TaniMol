@@ -1,5 +1,3 @@
-"""Fingerprint generation (Morgan/ECFP, MACCS, RDKit topological) for Tanimoto similarity."""
-
 import numpy as np
 from pathlib import Path
 from rdkit import Chem

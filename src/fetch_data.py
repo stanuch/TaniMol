@@ -10,8 +10,6 @@ import tarfile
 
 from config import CHEMBL_VERSION, URL, ARCHIVE_PATH, DB_PATH, RAW_DIR, SRC_DIR
 
-# Main
-
 if os.path.exists(DB_PATH):
     print(f"Database already exists at {DB_PATH}, skipping downloading process.")
 else:

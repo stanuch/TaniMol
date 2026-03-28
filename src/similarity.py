@@ -1,5 +1,3 @@
-"""Tanimoto similarity calculations for molecular fingerprints."""
-
 import numpy as np
 from pathlib import Path
 
