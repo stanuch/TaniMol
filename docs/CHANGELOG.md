@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.6.0] - 2026-03-29
+
+### Added
+- `src/activity_analysis.py` — within-cluster activity distribution statistics (mean, median, std, min, max per cluster)
+- `notebooks/05_activity_analysis.ipynb` — activity analysis notebook (Morgan ECFP4 only)
+
+### Fixed
+- **IC50 range filter**: added `standard_value > 0 AND standard_value <= 100000` to SQL query,
+  removing biologically impossible measurements (e.g. IC50 = 12M from ChEMBL data entry errors)
+
+### Changed
+- `config.py` — narrowed `TARGETS` to PARP1 only for clean single-target SAR analysis
+- Renamed `notebooks/05_visualization.ipynb` to `notebooks/06_visualization.ipynb`
+
+
 ## [0.5.0] - 2026-03-17
 
 ### Fixed
@@ -35,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Chore
 - Pinned all dependency versions in `environment.yml`
 
+
 ## [0.4.0] - 2026-03-16
 
 ### Added
@@ -52,6 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `src/config.py` — added fingerprint storage paths (`FINGERPRINTS_DIR`, `MORGAN_FP_PATH`, etc.)
+
 
 ## [0.3.0] - 2026-03-13
 

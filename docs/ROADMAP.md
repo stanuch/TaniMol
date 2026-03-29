@@ -25,8 +25,8 @@ Current status and planned development for TaniMol.
 - [x] `src/fingerprints.py` — Morgan (ECFP4), MACCS, RDKit fingerprint generation
 - [x] `src/similarity.py` — Tanimoto similarity matrix + distance matrix
 - [x] `src/clustering.py` — Butina clustering + hierarchical clustering
-- [ ] `src/activity_analysis.py` — Activity cliff detection, SALI, correlation statistics
-- [ ] `src/visualization.py` — Heatmaps, chemical space maps, boxplots, cliff plots, SALI network
+- [/] `src/activity_analysis.py` — Activity cliff detection, SALI, correlation statistics
+- [/] `src/visualization.py` — Heatmaps, chemical space maps, boxplots, cliff plots, SALI network
 
 
 ## Phase 4 — Testing and polish

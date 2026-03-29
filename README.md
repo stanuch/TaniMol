@@ -15,7 +15,7 @@ TaniMol is an adaptable chemoinformatics pipeline built to map the relationship 
 ![Last Commit](https://img.shields.io/github/last-commit/stanuch/TaniMol)
 
 > [!NOTE]
-> **MID DEVELOPMENT — CLUSTERING COMPLETE**
+> **MID DEVELOPMENT — ACTIVITY ANALYSIS IN PROGRESS**
 >
 > The pipeline acquires data, standardizes molecules, generates fingerprints (Morgan, MACCS, RDKit), computes Tanimoto similarity matrices, and groups compounds into clusters via Butina clustering. Cluster visualizations are in place. Next step is activity analysis (SALI, activity cliffs, SAR statistics).
 
@@ -104,15 +104,11 @@ Each molecule is converted into a binary fingerprint. The primary type is **Morg
 
 ### 4. Similarity matrix
 
-A pairwise Tanimoto similarity matrix is computed for all molecules. For a dataset of ~7,000 molecules, this generates an $N×N$ symmetric matrix yielding ~24 million pairs. 
-
-To execute this efficiently, the pipeline uses a vectorized NumPy dot-product approach (`float32` intersection via matrix multiplication). This method completes the pairwise computations in under a second on a standard CPU (*tested on AMD Ryzen 5 7600X*). Distance matrices (1 − Tanimoto) are also generated for the clustering algorithms.
+A pairwise Tanimoto similarity matrix is computed for all molecules. To execute this efficiently, the pipeline uses a vectorized NumPy dot-product approach (`float32` intersection via matrix multiplication). This method completes the pairwise computations in under a second on a standard CPU (*tested on AMD Ryzen 5 7600X*). Distance matrices (1 − Tanimoto) are also generated for the clustering algorithms.
 
 ### 5. Clustering
 
 Molecules are grouped into clusters using **Butina clustering** — a sphere-exclusion algorithm that assigns each molecule to a cluster if it falls within a defined Tanimoto distance threshold (default: 0.6) of the cluster centroid. The centroid is the molecule with the highest number of neighbors.
-
-At threshold 0.6, the current dataset yields **877 clusters** and **658 singletons** across ~7,000 molecules. The largest cluster contains 243 molecules.
 
 UPGMA (average linkage) hierarchical clustering is additionally used to sort the similarity heatmaps and surface diagonal "islands" of structural analogs. UPGMA is used rather than Ward linkage because Ward assumes Euclidean geometry, which is invalid for Tanimoto distances on binary fingerprints.
 
@@ -178,7 +174,7 @@ TaniMol/
 │   ├── fingerprints.py      # Generate Morgan/MACCS/RDKit fingerprints
 │   ├── similarity.py        # Compute Tanimoto similarity and distance matrices
 │   ├── clustering.py        # Butina clustering
-│   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics [TODO]
+│   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics [IN PROGRESS]
 │   └── visualization.py     # All plotting functions
 │
 ├── notebooks/               # Jupyter notebooks for analysis run step-by-step
