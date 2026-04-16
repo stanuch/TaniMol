@@ -6,6 +6,16 @@ from scipy.cluster.hierarchy import linkage, leaves_list
 from scipy.spatial.distance import squareform
 
 FP_COLORS = {"Morgan": "#2196F3", "MACCS": "#4CAF50", "RDKit": "#FF5722"}
+COLORS = {
+    "primary": "#2A9D8F",
+    "accent": "#E76F51",
+    "secondary": "#F4A261",
+    "neutral": "#8D99AE",
+    "cliff_zone": "#FDDEDE",
+    "text": "#4A4A4A",
+    "annotation": "#264653",
+    "annotation_border": "#B7C4CF",
+}
 STYLE = {
     "facecolor": "white",
     "grid_alpha": 0.3,
@@ -136,10 +146,6 @@ def plot_top_clusters_heatmap(
     name: str,
     top_n: int = 10,
 ) -> None:
-    """Heatmap of the top_n largest clusters, molecules ordered within each cluster.
-    Molecules are sorted by cluster membership so each block on the diagonal
-    corresponds to one cluster. Cluster boundaries are marked with white lines.
-    """
     sorted_clusters = sorted(cluster_dict.values(), key=len, reverse=True)[:top_n]
 
     ordered_indices = list(chain.from_iterable(sorted_clusters))
@@ -254,7 +260,7 @@ def plot_similarity_heatmap(matrix: np.ndarray, name: str) -> np.ndarray:
         stats,
         ha="center",
         fontsize=STYLE["stats_fontsize"],
-        color="#555555",
+        color=COLORS["text"],
         fontstyle="italic",
         transform=fig.transFigure,
     )
@@ -263,3 +269,276 @@ def plot_similarity_heatmap(matrix: np.ndarray, name: str) -> np.ndarray:
     plt.show()
 
     return order
+
+
+def plot_cluster_activity_boxplots(
+    clusters: dict,
+    pic50: np.ndarray,
+    top_n: int = 15,
+) -> None:
+    sorted_clusters = sorted(clusters.items(), key=lambda x: len(x[1]), reverse=True)[
+        :top_n
+    ]
+
+    data = [pic50[list(members)] for _, members in sorted_clusters]
+    labels = [f"C{i + 1}\n(n={len(d)})" for i, d in enumerate(data)]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    fig.patch.set_facecolor(STYLE["facecolor"])
+    ax.set_facecolor(STYLE["facecolor"])
+
+    bp = ax.boxplot(
+        data,
+        patch_artist=True,
+        labels=labels,
+        widths=0.6,
+        medianprops=dict(color=COLORS["accent"], linewidth=1.5),
+        flierprops=dict(marker="o", markersize=3, alpha=0.5, markerfacecolor="#888"),
+    )
+
+    for patch in bp["boxes"]:
+        patch.set_facecolor(COLORS["primary"])
+        patch.set_alpha(0.6)
+
+    ax.set_xlabel("Cluster", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_ylabel("pIC50", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_title(
+        f"pIC50 distribution — top {top_n} clusters",
+        fontsize=STYLE["title_fontsize"],
+        fontweight="bold",
+        pad=10,
+    )
+    _style_ax(ax)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_activity_cliff_scatter(
+    similarity_matrix: np.ndarray,
+    delta_pic50: np.ndarray,
+    sim_threshold: float = 0.8,
+    activity_threshold: float = 2.0,
+) -> None:
+    from matplotlib.patches import Rectangle
+
+    idx = np.triu_indices(similarity_matrix.shape[0], k=1)
+    sim_vec = similarity_matrix[idx]
+    delta_vec = delta_pic50[idx]
+
+    cliff_mask = (sim_vec > sim_threshold) & (delta_vec > activity_threshold)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.patch.set_facecolor(STYLE["facecolor"])
+    ax.set_facecolor(STYLE["facecolor"])
+
+    # Subsample non-cliff points for readability
+    non_cliff_idx = np.where(~cliff_mask)[0]
+    max_points = min(20000, len(non_cliff_idx))
+    rng = np.random.default_rng(42)
+    sample = rng.choice(non_cliff_idx, size=max_points, replace=False)
+
+    ax.scatter(
+        sim_vec[sample],
+        delta_vec[sample],
+        s=2,
+        alpha=0.3,
+        color=COLORS["neutral"],
+        rasterized=True,
+        label=f"All pairs (n={len(sim_vec):,})",
+    )
+
+    # Activity cliffs on top
+    if cliff_mask.sum() > 0:
+        ax.scatter(
+            sim_vec[cliff_mask],
+            delta_vec[cliff_mask],
+            s=12,
+            alpha=0.9,
+            color=COLORS["accent"],
+            edgecolors="white",
+            linewidths=0.3,
+            zorder=5,
+            label=f"Activity cliffs (n={cliff_mask.sum()})",
+        )
+
+    ax.axhline(
+        activity_threshold,
+        color=COLORS["accent"],
+        linestyle="--",
+        linewidth=0.8,
+        alpha=0.5,
+    )
+    ax.axvline(
+        sim_threshold, color=COLORS["accent"], linestyle="--", linewidth=0.8, alpha=0.5
+    )
+
+    # Cliff zone
+    y_max = delta_vec.max() * 1.05
+    rect = Rectangle(
+        (sim_threshold, activity_threshold),
+        1.0 - sim_threshold,
+        y_max - activity_threshold,
+        facecolor=COLORS["cliff_zone"],
+        alpha=0.25,
+        edgecolor="none",
+        zorder=0,
+    )
+    ax.add_patch(rect)
+
+    ax.set_xlabel("Tanimoto similarity", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_ylabel("|ΔpIC50|", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_title(
+        "Activity cliff detection",
+        fontsize=STYLE["title_fontsize"],
+        fontweight="bold",
+        pad=10,
+    )
+    ax.legend(fontsize=STYLE["stats_fontsize"], loc="upper left")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, None)
+    _style_ax(ax)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_sali_distribution(sali_values: np.ndarray) -> None:
+    nonzero = sali_values[sali_values > 0]
+
+    # Log-spaced bins from min to max (becuase the distribution is skewed and it looked really weird)
+    bins = np.logspace(np.log10(nonzero.min()), np.log10(nonzero.max()), num=80)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    fig.patch.set_facecolor(STYLE["facecolor"])
+    ax.set_facecolor(STYLE["facecolor"])
+
+    ax.hist(
+        nonzero,
+        bins=bins,
+        color=COLORS["primary"],
+        alpha=0.7,
+        edgecolor="white",
+        linewidth=0.3,
+    )
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+
+    # Mark percentiles
+    p95 = np.percentile(nonzero, 95)
+    p99 = np.percentile(nonzero, 99)
+    ax.axvline(
+        p95,
+        color=COLORS["secondary"],
+        linestyle="--",
+        linewidth=1.2,
+        label=f"95th percentile = {p95:.1f}",
+    )
+    ax.axvline(
+        p99,
+        color=COLORS["accent"],
+        linestyle="--",
+        linewidth=1.2,
+        label=f"99th percentile = {p99:.1f}",
+    )
+
+    ax.set_xlabel("SALI (log scale)", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_ylabel(
+        "Number of pairs (log scale)", fontsize=STYLE["label_fontsize"], labelpad=6
+    )
+    ax.set_title(
+        "SALI distribution (non-zero pairs)",
+        fontsize=STYLE["title_fontsize"],
+        fontweight="bold",
+        pad=10,
+    )
+    ax.legend(fontsize=STYLE["stats_fontsize"])
+    _style_ax(ax)
+
+    stats = (
+        f"max={nonzero.max():.1f}   "
+        f"mean={nonzero.mean():.2f}   "
+        f"median={np.median(nonzero):.2f}   "
+        f"pairs > 50: {(nonzero > 50).sum()}"
+    )
+    fig.text(
+        0.5,
+        -0.01,
+        stats,
+        ha="center",
+        fontsize=STYLE["stats_fontsize"],
+        color=COLORS["text"],
+        fontstyle="italic",
+        transform=fig.transFigure,
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_similarity_activity_density(
+    similarity_matrix: np.ndarray,
+    delta_pic50: np.ndarray,
+    rho: float | None = None,
+    p_value: float | None = None,
+) -> None:
+    idx = np.triu_indices(similarity_matrix.shape[0], k=1)
+    sim_vec = similarity_matrix[idx]
+    delta_vec = delta_pic50[idx]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.patch.set_facecolor(STYLE["facecolor"])
+    ax.set_facecolor(STYLE["facecolor"])
+
+    hb = ax.hexbin(
+        sim_vec,
+        delta_vec,
+        gridsize=60,
+        cmap="YlOrRd",
+        mincnt=1,
+        linewidths=0.1,
+    )
+
+    cbar = fig.colorbar(hb, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_label("Pair count", fontsize=STYLE["label_fontsize"])
+    cbar.ax.tick_params(labelsize=STYLE["tick_fontsize"])
+    cbar.outline.set_linewidth(0.5)
+
+    ax.set_xlabel("Tanimoto similarity", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_ylabel("|ΔpIC50|", fontsize=STYLE["label_fontsize"], labelpad=6)
+    ax.set_title(
+        "Similarity–activity landscape (density)",
+        fontsize=STYLE["title_fontsize"],
+        fontweight="bold",
+        pad=10,
+    )
+
+    if rho is not None:
+        annotation = f"Spearman ρ = {rho:.4f}"
+        if p_value is not None:
+            annotation += f"  (p = {p_value:.2e})"
+        ax.text(
+            0.98,
+            0.97,
+            annotation,
+            transform=ax.transAxes,
+            ha="right",
+            va="top",
+            fontsize=STYLE["stats_fontsize"],
+            color=COLORS["annotation"],
+            fontstyle="italic",
+            bbox=dict(
+                boxstyle="round,pad=0.3",
+                facecolor="white",
+                alpha=0.8,
+                edgecolor=COLORS["annotation_border"],
+            ),
+        )
+
+    _style_ax(ax)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, None)
+
+    plt.tight_layout()
+    plt.show()
