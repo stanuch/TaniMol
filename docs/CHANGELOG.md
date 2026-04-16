@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.7.0] - 2026-04-16
+
+### Added
+- `src/activity_analysis.py` — completed all activity analysis functions:
+  - `activity_cliffs()` — vectorized detection of molecular pairs with high structural
+    similarity (Tanimoto > 0.8) but dramatically different activity (|ΔpIC50| > 2.0);
+    configurable thresholds, returns results sorted by most dramatic cliff first
+  - `sali()` — Structure-Activity Landscape Index computation for all molecular pairs;
+    returns full NxN SALI matrix and upper-triangle values vector
+  - `similarity_activity_correlation()` — global SAR hypothesis test via Spearman rank
+    correlation between pairwise Tanimoto similarity and |ΔpIC50|
+- `notebooks/05_activity_analysis.ipynb` — completed all TODO cells:
+  - Activity cliff detection with results table
+  - SALI computation with summary statistics
+  - Top SALI pairs extraction with SMILES inspection
+  - Spearman correlation with SAR interpretation
+
+### Changed
+- `src/activity_analysis.py` — added `scipy` import for `spearmanr`
+
+
 ## [0.6.0] - 2026-03-29
 
 ### Added

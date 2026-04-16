@@ -7,7 +7,7 @@ TaniMol is an adaptable chemoinformatics pipeline built to map the relationship 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
 ![Conda](https://img.shields.io/badge/Environment-Conda-green?logo=anaconda&logoColor=white)
 ![Database](https://img.shields.io/badge/Database-ChEMBL_36-orange)
-![Stage](https://img.shields.io/badge/Stage-Activity_Analysis-blue)
+![Stage](https://img.shields.io/badge/Stage-Visualization-blue)
 ![Code](https://img.shields.io/badge/Code-In_progress-yellow)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![GitHub Repo Size](https://img.shields.io/github/repo-size/stanuch/TaniMol)
@@ -15,9 +15,9 @@ TaniMol is an adaptable chemoinformatics pipeline built to map the relationship 
 ![Last Commit](https://img.shields.io/github/last-commit/stanuch/TaniMol)
 
 > [!NOTE]
-> **MID DEVELOPMENT — ACTIVITY ANALYSIS IN PROGRESS**
+> **MID DEVELOPMENT — VISUALIZATION IN PROGRESS**
 >
-> The pipeline acquires data, standardizes molecules, generates fingerprints (Morgan, MACCS, RDKit), computes Tanimoto similarity matrices, and groups compounds into clusters via Butina clustering. Cluster visualizations are in place. Next step is activity analysis (SALI, activity cliffs, SAR statistics).
+> The pipeline acquires data, standardizes molecules, generates fingerprints (Morgan, MACCS, RDKit), computes Tanimoto similarity matrices, groups compounds into clusters via Butina clustering, and performs activity analysis (activity cliffs, SALI, Spearman SAR correlation). Next step is expanding the visualization module with activity-focused plots.
 
 # Table of contents
 
