@@ -26,15 +26,16 @@ Current status and planned development for TaniMol.
 - [x] `src/similarity.py` — Tanimoto similarity matrix + distance matrix
 - [x] `src/clustering.py` — Butina clustering + hierarchical clustering
 - [x] `src/activity_analysis.py` — Activity cliff detection, SALI, correlation statistics
-- [/] `src/visualization.py` — Heatmaps, chemical space maps, boxplots, cliff plots, SALI network
+- [x] `src/visualization.py` — Heatmaps, boxplots, cliff scatter, SALI histogram, density plots
+- [x] `src/export.py` — Export results to CSV, JSON, and publication-ready figures
 
 
 ## Phase 4 — Testing and polish
 
+- [x] Run the full pipeline end-to-end, verify all outputs
+- [x] Export key figures to `results/`
+- [x] Final README review
 - [ ] Unit tests for preprocessing, fingerprints, and similarity modules
-- [ ] Run the full pipeline end-to-end, verify all outputs
-- [ ] Export key figures to `results/`
-- [ ] Final README review
 
 
 ## Phase 5 — DNA repair-specific analyses

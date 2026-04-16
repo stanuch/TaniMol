@@ -7,17 +7,17 @@ TaniMol is an adaptable chemoinformatics pipeline built to map the relationship 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
 ![Conda](https://img.shields.io/badge/Environment-Conda-green?logo=anaconda&logoColor=white)
 ![Database](https://img.shields.io/badge/Database-ChEMBL_36-orange)
-![Stage](https://img.shields.io/badge/Stage-Visualization-blue)
-![Code](https://img.shields.io/badge/Code-In_progress-yellow)
+![Stage](https://img.shields.io/badge/Stage-MVP_Complete-brightgreen)
+![Code](https://img.shields.io/badge/Code-v1.0.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![GitHub Repo Size](https://img.shields.io/github/repo-size/stanuch/TaniMol)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![Last Commit](https://img.shields.io/github/last-commit/stanuch/TaniMol)
 
 > [!NOTE]
-> **MID DEVELOPMENT — VISUALIZATION IN PROGRESS**
+> **MVP COMPLETE**
 >
-> The pipeline acquires data, standardizes molecules, generates fingerprints (Morgan, MACCS, RDKit), computes Tanimoto similarity matrices, groups compounds into clusters via Butina clustering, and performs activity analysis (activity cliffs, SALI, Spearman SAR correlation). Next step is expanding the visualization module with activity-focused plots.
+> The full pipeline is operational: data acquisition → preprocessing → fingerprints → similarity → clustering → activity analysis → visualization → export. All results are exported to `results/` as CSV, JSON, and publication-ready figures. See [Phase 5 in the roadmap](docs/ROADMAP.md) for planned extensions beyond the core pipeline.
 
 # Table of contents
 
@@ -124,20 +124,28 @@ UPGMA (average linkage) hierarchical clustering is additionally used to sort the
 
 ### 7. Visualization
 
-The project currently outputs:
-- **Similarity heatmap** — full N×N Tanimoto matrix sorted by UPGMA clustering; used as a sanity check to confirm diagonal cluster structure is present
-- **Similarity distribution** — overlaid histograms of pairwise Tanimoto values for all three fingerprint types, showing the chemical diversity of the dataset
-- **Cluster size distribution** — bar chart of how many clusters fall into each size bin (singleton / 2–5 / 6–20 / 21–50 / >50), compared across fingerprint types
-- **Top-N cluster heatmap** — submatrix heatmap of the largest N clusters with white boundary lines; reveals internal cluster cohesion and inter-cluster relationships
+The visualization module provides structural and activity-focused plots:
+- **Similarity heatmap** — full N×N Tanimoto matrix sorted by UPGMA clustering; confirms diagonal cluster structure
+- **Similarity distribution** — overlaid histograms of pairwise Tanimoto values for all three fingerprint types
+- **Cluster size distribution** — bar chart of cluster sizes across fingerprint types
+- **Top-N cluster heatmap** — submatrix heatmap of the largest clusters with boundary lines
+- **Cluster activity boxplots** — pIC50 distributions per cluster; tight boxes confirm SAR, wide boxes suggest cliffs
+- **Activity cliff scatter** — Tanimoto vs |ΔpIC50| with cliff zone highlighted
+- **SALI distribution** — log-scaled histogram of Structure-Activity Landscape Index values with percentile markers
+- **Similarity–activity density** — hexbin density plot with Spearman ρ annotation
 
 <p align="center">
   <img src="docs/img/sample_heatmap.png" width="500" title="Morgan Fingerprint Heatmap Example" alt="Heatmap Example">
 </p>
 
-In future updates, these will be added:
-- **Chemical space map** - t-SNE or UMAP projection of fingerprints into 2D
-- **Cluster activity boxplots** - pIC50 distributions per cluster
-- **Activity cliff scatter & SALI network** 
+### 8. Export
+
+All results are exported to `results/` via `src/export.py`:
+- `cluster_statistics.csv` — per-cluster pIC50 summary statistics
+- `activity_cliffs.csv` — all cliff pairs with SMILES, similarity, ΔpIC50, SALI
+- `molecule_summary.csv` — per-molecule table with cluster assignment, max SALI, cliff involvement
+- `pipeline_summary.json` — run metadata, parameters, and key results
+- `results/figures/` — all plots as 300 DPI PNGs
 
 # Scope and focus
 
@@ -164,7 +172,6 @@ TaniMol/
 ├── data/
 │   ├── raw/                 # Original ChEMBL database
 │   ├── processed/           # Cleaned, merged dataset with pIC50
-│   ├── external/            # Any third-party data
 │   └── targets/             # Notes on selected DNA repair targets
 │
 ├── src/                     # Python modules (importable from notebooks)
@@ -174,14 +181,21 @@ TaniMol/
 │   ├── fingerprints.py      # Generate Morgan/MACCS/RDKit fingerprints
 │   ├── similarity.py        # Compute Tanimoto similarity and distance matrices
 │   ├── clustering.py        # Butina clustering
-│   ├── activity_analysis.py # Activity cliffs, SALI, correlation statistics [IN PROGRESS]
-│   └── visualization.py     # All plotting functions
+│   ├── activity_analysis.py # Activity cliffs, SALI, Spearman correlation
+│   ├── visualization.py     # All plotting functions
+│   └── export.py            # Export results to CSV, JSON, and figures
 │
-├── notebooks/               # Jupyter notebooks for analysis run step-by-step
+├── notebooks/               # Jupyter notebooks (run step-by-step)
+│   ├── 01_preprocessing.ipynb
+│   ├── 02_fingerprints.ipynb
+│   ├── 03_similarity.ipynb
+│   ├── 04_clustering.ipynb
+│   ├── 05_activity_analysis.ipynb
+│   ├── 06_visualization.ipynb
+│   └── 07_export.ipynb
 │
-├── results/                 # Generated plots, tables, exported figures
-├── tests/                   # Unit tests for core modules
-├── docs/img/                # Logo and README figures
+├── results/                 # Exported CSV, JSON, and figures
+├── docs/                    # CHANGELOG, METHODS, ROADMAP, images
 ├── environment.yml          # Conda dependencies
 ├── pyproject.toml           # Build system configuration for pip install -e .
 └── LICENSE                  # MIT

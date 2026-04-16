@@ -6,7 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [0.7.0] - 2026-04-16
+## [1.0.0] - 2026-04-16
+
+### Added
+- `src/visualization.py` — five new activity-focused plotting functions:
+  - `plot_cluster_activity_boxplots()` — pIC50 distributions per cluster
+  - `plot_activity_cliff_scatter()` — Tanimoto vs |ΔpIC50| with cliff zone overlay
+  - `plot_sali_distribution()` — log-scaled SALI histogram with 95th/99th percentile markers
+  - `plot_similarity_activity_density()` — hexbin density plot with Spearman ρ annotation
+- `src/export.py` — results export module:
+  - `export_cluster_statistics()` — per-cluster pIC50 summary to CSV
+  - `export_activity_cliffs()` — cliff pairs with SMILES, similarity, SALI to CSV
+  - `export_molecule_summary()` — per-molecule table with cluster ID, max SALI, cliff count to CSV
+  - `export_pipeline_summary()` — full run metadata and key results to JSON
+  - `export_all_figures()` — save all plots as 300 DPI PNGs
+- `notebooks/07_export.ipynb` — export workflow notebook
+- Centralized `COLORS` dictionary in `visualization.py` for consistent plot styling
+- `RESULTS_DIR` path in `config.py`
+
+### Changed
+- `visualization.py` — unified color palette across all plots (teal/coral/amber theme)
+- `visualization.py` — activity cliff scatter now uses `Rectangle` patch in data coordinates
+  for accurate cliff zone alignment
+- `visualization.py` — SALI histogram uses log-scaled axes and log-spaced bins to show
+  the full distribution including rare high-SALI outliers
+- README updated: stage badge → MVP Complete, visualization section expanded,
+  project structure updated with all notebooks and export module
+- ROADMAP updated: Phase 3 and Phase 4 items marked complete
+
+
+## [0.7.0] - 2026-04-13
 
 ### Added
 - `src/activity_analysis.py` — completed all activity analysis functions:
