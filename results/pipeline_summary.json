@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-04-16T22:50:09.185597",
+  "chembl_version": "36",
+  "targets": {
+    "CHEMBL3105": "PARP1"
+  },
+  "parameters": {
+    "fingerprint_type": "Morgan (ECFP4)",
+    "morgan_radius": 2,
+    "clustering_threshold": 0.6,
+    "activity_types": [
+      "IC50"
+    ],
+    "min_confidence_score": 7,
+    "cliff_sim_threshold": 0.8,
+    "cliff_activity_threshold": 2.0
+  },
+  "dataset": {
+    "n_molecules": 3324,
+    "pic50_mean": 7.128,
+    "pic50_median": 7.3,
+    "pic50_std": 1.15,
+    "pic50_range": [
+      4.0,
+      10.7
+    ]
+  },
+  "clustering": {
+    "n_clusters": 339,
+    "n_singletons": 370,
+    "n_clustered_molecules": 2954,
+    "largest_cluster_size": 173
+  },
+  "activity_cliffs": {
+    "n_cliffs": 37,
+    "max_delta_pic50": 4.05
+  },
+  "sali": {
+    "max": 72.8,
+    "mean": 1.57,
+    "median": 1.33,
+    "p95": 3.79,
+    "p99": 4.8,
+    "pairs_above_50": 4
+  },
+  "spearman_correlation": {
+    "rho": -0.1149,
+    "p_value": 0.0,
+    "sar_confirmed": true
+  }
+}

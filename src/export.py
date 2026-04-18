@@ -12,6 +12,8 @@ from src.config import (
     CLUSTERING_THRESHOLD,
     ACTIVITY_TYPES,
     MIN_CONFIDENCE,
+    CLIFF_SIM_THRESHOLD,
+    CLIFF_ACTIVITY_THRESHOLD,
 )
 
 FIGURES_DIR = RESULTS_DIR / "figures"
@@ -22,7 +24,9 @@ def _ensure_dirs():
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def export_cluster_statistics(cluster_stats: dict, path: Path | None = None) -> pd.DataFrame:
+def export_cluster_statistics(
+    cluster_stats: dict, path: Path | None = None
+) -> pd.DataFrame:
     """Export per-cluster activity statistics to CSV.
 
     Each row is one cluster with: centroid index, size, mean/median/std/min/max pIC50.
@@ -102,13 +106,10 @@ def export_molecule_summary(
             mol_to_cluster[mol_idx] = centroid
             mol_to_cluster_size[mol_idx] = len(members)
 
-    # Max SALI per molecule (from upper triangle to avoid double counting)
-    max_sali = np.zeros(n_mols)
-    for i in range(n_mols):
-        row_vals = sali_matrix[i, :]
-        row_vals_copy = row_vals.copy()
-        row_vals_copy[i] = 0  # exclude self
-        max_sali[i] = row_vals_copy.max()
+    # Max SALI per molecule (vectorized)
+    sali_no_diag = sali_matrix.copy()
+    np.fill_diagonal(sali_no_diag, 0)
+    max_sali = sali_no_diag.max(axis=1)
 
     # Count cliff involvement
     cliff_counts = np.zeros(n_mols, dtype=int)
@@ -120,7 +121,9 @@ def export_molecule_summary(
         {
             "mol_idx": range(n_mols),
             "smiles": df[smiles_column].values,
-            "target": df["target_chembl_id"].values if "target_chembl_id" in df.columns else "N/A",
+            "target": df["target_chembl_id"].values
+            if "target_chembl_id" in df.columns
+            else "N/A",
             "pic50": df[pic50_column].values,
             "cluster_id": [mol_to_cluster.get(i, "singleton") for i in range(n_mols)],
             "cluster_size": [mol_to_cluster_size.get(i, 1) for i in range(n_mols)],
@@ -167,8 +170,8 @@ def export_pipeline_summary(
             "clustering_threshold": CLUSTERING_THRESHOLD,
             "activity_types": ACTIVITY_TYPES,
             "min_confidence_score": MIN_CONFIDENCE,
-            "cliff_sim_threshold": 0.8,
-            "cliff_activity_threshold": 2.0,
+            "cliff_sim_threshold": CLIFF_SIM_THRESHOLD,
+            "cliff_activity_threshold": CLIFF_ACTIVITY_THRESHOLD,
         },
         "dataset": {
             "n_molecules": len(df),
@@ -184,18 +187,30 @@ def export_pipeline_summary(
             "n_clusters": len(clusters),
             "n_singletons": len(singletons),
             "n_clustered_molecules": sum(len(c) for c in clusters.values()),
-            "largest_cluster_size": max(len(c) for c in clusters.values()) if clusters else 0,
+            "largest_cluster_size": max(len(c) for c in clusters.values())
+            if clusters
+            else 0,
         },
         "activity_cliffs": {
             "n_cliffs": len(cliffs),
-            "max_delta_pic50": round(max(c["delta_pic50"] for c in cliffs), 3) if cliffs else 0,
+            "max_delta_pic50": round(max(c["delta_pic50"] for c in cliffs), 3)
+            if cliffs
+            else 0,
         },
         "sali": {
             "max": round(float(nonzero_sali.max()), 2) if len(nonzero_sali) > 0 else 0,
-            "mean": round(float(nonzero_sali.mean()), 2) if len(nonzero_sali) > 0 else 0,
-            "median": round(float(np.median(nonzero_sali)), 2) if len(nonzero_sali) > 0 else 0,
-            "p95": round(float(np.percentile(nonzero_sali, 95)), 2) if len(nonzero_sali) > 0 else 0,
-            "p99": round(float(np.percentile(nonzero_sali, 99)), 2) if len(nonzero_sali) > 0 else 0,
+            "mean": round(float(nonzero_sali.mean()), 2)
+            if len(nonzero_sali) > 0
+            else 0,
+            "median": round(float(np.median(nonzero_sali)), 2)
+            if len(nonzero_sali) > 0
+            else 0,
+            "p95": round(float(np.percentile(nonzero_sali, 95)), 2)
+            if len(nonzero_sali) > 0
+            else 0,
+            "p99": round(float(np.percentile(nonzero_sali, 99)), 2)
+            if len(nonzero_sali) > 0
+            else 0,
             "pairs_above_50": int((nonzero_sali > 50).sum()),
         },
         "spearman_correlation": {
@@ -226,12 +241,16 @@ def export_all_figures(fig_functions: dict[str, callable], dpi: int = 300) -> No
     _ensure_dirs()
     import matplotlib.pyplot as plt
 
+    _original_show = plt.show
+    plt.show = lambda *args, **kwargs: None
+
     for name, func in fig_functions.items():
         func()
         fig = plt.gcf()
         path = FIGURES_DIR / f"{name}.png"
         fig.savefig(path, dpi=dpi, bbox_inches="tight", facecolor="white")
         plt.close(fig)
-        print(f"Saved {path}")
 
-    print(f"\nExported {len(fig_functions)} figures to {FIGURES_DIR}")
+    plt.show = _original_show
+
+    print(f"Exported {len(fig_functions)} figures to {FIGURES_DIR}")

@@ -4,7 +4,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, MACCSkeys
 from tqdm import tqdm
 
-from src.config import MORGAN_RADIUS
+from src.config import MORGAN_RADIUS, MORGAN_FP_BITS
 
 
 def mol_from_smiles(smiles):
@@ -14,7 +14,7 @@ def mol_from_smiles(smiles):
     return Chem.MolFromSmiles(smiles)
 
 
-def generate_morgan_fp(mol, radius=MORGAN_RADIUS, n_bits=2048):
+def generate_morgan_fp(mol, radius=MORGAN_RADIUS, n_bits=MORGAN_FP_BITS):
     """Generate Morgan (ECFP) fingerprint as a NumPy bit array.
 
     radius=2 corresponds to ECFP4, radius=3 to ECFP6.
@@ -35,7 +35,7 @@ def generate_maccs_fp(mol):
     return np.array(fp)
 
 
-def generate_rdkit_fp(mol, fp_size=2048):
+def generate_rdkit_fp(mol, fp_size=MORGAN_FP_BITS):
     """Generate RDKit topological fingerprint (path-based, not circular).
     mol must be a sanitized RDKit Mol (not None).
     """

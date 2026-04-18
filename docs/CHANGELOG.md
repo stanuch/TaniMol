@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [1.0.1] - 2026-04-17
+
+### Fixed
+- `src/export.py` — vectorized max SALI computation per molecule, replacing slow Python loop
+  with NumPy `fill_diagonal` + `max(axis=1)` for significantly faster molecule summary export
+- `src/export.py` — `export_all_figures()` now suppresses `plt.show()` during export,
+  preventing plots from rendering in the notebook when only file output is needed
+
+### Changed
+- Code formatting: applied consistent line-break style across `src/export.py` (Ruff)
+- Updated notebook outputs for `06_visualization.ipynb` and `07_export.ipynb`
+- Centralized hardcoded parameters into `src/config.py`:
+  - `MORGAN_FP_BITS = 2048` — used by `fingerprints.py` for Morgan and RDKit fingerprint size
+  - `CLIFF_SIM_THRESHOLD = 0.8` — used by `activity_analysis.py` and `export.py`
+  - `CLIFF_ACTIVITY_THRESHOLD = 2.0` — used by `activity_analysis.py` and `export.py`
+
+
 ## [1.0.0] - 2026-04-16
 
 ### Added

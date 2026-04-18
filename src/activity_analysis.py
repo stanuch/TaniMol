@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.stats import spearmanr
 
+from src.config import CLIFF_SIM_THRESHOLD, CLIFF_ACTIVITY_THRESHOLD
+
 
 def within_cluster_activity_distributions(clusters: dict, pic50: np.ndarray):
     results = {}
@@ -20,8 +22,8 @@ def within_cluster_activity_distributions(clusters: dict, pic50: np.ndarray):
 def activity_cliffs(
     similarity_matrix: np.ndarray,
     delta_pic50: np.ndarray,
-    sim_threshold: float = 0.8,
-    activity_threshold: float = 2.0,
+    sim_threshold: float = CLIFF_SIM_THRESHOLD,
+    activity_threshold: float = CLIFF_ACTIVITY_THRESHOLD,
 ):
     mask = (similarity_matrix > sim_threshold) & (delta_pic50 > activity_threshold)
     np.fill_diagonal(mask, False)
